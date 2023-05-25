@@ -8,6 +8,10 @@ import {ISuperToken} from "@superfluid-finance/ethereum-contracts/contracts/inte
 import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/IQuoterV2.sol";
+import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
+
 // SUPERFLUID
 // - Wrap ERC20 tokens -- user has erc20 tokens
 // - Unwrap ERC20 tokens -- user has super tokenAddress
@@ -39,6 +43,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract dCafProtocol is AutomateTaskCreator {
     using SuperTokenV1Library for ISuperToken;
+    ISwapRouter public immutable swapRouter;
 
     // ISuperToken public token;
 
@@ -61,8 +66,11 @@ contract dCafProtocol is AutomateTaskCreator {
 
     constructor(
         address payable _automate,
-        address _fundsOwner
-    ) AutomateTaskCreator(_automate, _fundsOwner) {}
+        address _fundsOwner,
+        address _swapRouter
+    ) AutomateTaskCreator(_automate, _fundsOwner) {
+        swapRouter = ISwapRouter(_swapRouter);
+    }
 
     /*///////////////////////////////////////////////////////////////
                            Extras

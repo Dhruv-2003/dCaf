@@ -8,6 +8,10 @@ import {ISuperToken} from "@superfluid-finance/ethereum-contracts/contracts/inte
 import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/IQuoterV2.sol";
+import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
+
 // SUPERFLUID
 // - Wrap ERC20 tokens -- user has erc20 tokens
 // - Unwrap ERC20 tokens -- user has super tokenAddress
@@ -37,32 +41,41 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // - afterSwap() -  send the exchanged tokens to the user directly
 // - cancelDCATask() - after time period is over , it will cancel the task1 and the stream
 
-contract dCafProtocol is AutomateTaskCreator {
+contract LCafProtocol is AutomateTaskCreator {
     using SuperTokenV1Library for ISuperToken;
+    ISwapRouter public immutable swapRouter;
+    IQuoterV2 public immutable quoter;
+    uint24 public constant poolFee = 3000;
+    uint160 sqrtPriceLimitX96 = 0;
 
     // ISuperToken public token;
 
-    struct DCAfOrder {
+    struct LCAfOrder {
         address creator;
         address tokenIn; // to send
         address superToken; // token streamed
         address tokenOut; // to buy
         uint256 streamRate;
         uint256 timePeriod;
-        uint256 dcfaFreq;
+        uint256 limitPrice;
         uint256 lastTradeTimeStamp;
         bool activeStatus;
         bytes32 task1Id;
         bytes32 task2Id;
     }
 
-    uint public totaldcafOrders;
-    mapping(uint => DCAfOrder) public dcafOrders;
+    uint public totallcafOrders;
+    mapping(uint => LCAfOrder) public lcafOrders;
 
     constructor(
         address payable _automate,
-        address _fundsOwner
-    ) AutomateTaskCreator(_automate, _fundsOwner) {}
+        address _fundsOwner,
+        address _swapRouter,
+        address _quoterv2
+    ) AutomateTaskCreator(_automate, _fundsOwner) {
+        swapRouter = ISwapRouter(_swapRouter);
+        quoter = IQuoterV2(_quoterv2);
+    }
 
     /*///////////////////////////////////////////////////////////////
                            Extras
@@ -103,7 +116,7 @@ contract dCafProtocol is AutomateTaskCreator {
         withdrawFunds(_amount, _token);
     }
 
-    function createTask(uint dcafOrderId) internal {
+    function createTask(uint lcafOrderId) internal {
         ModuleData memory moduleData = ModuleData({
             modules: new Module[](3),
             args: new bytes[](3)
@@ -128,14 +141,14 @@ contract dCafProtocol is AutomateTaskCreator {
             address(0)
         );
 
-        dcafOrders[dcafOrderId].task1Id = taskId;
+        lcafOrders[lcafOrderId].task1Id = taskId;
         /// Here we just pass the function selector we are looking to execute
 
         // emit limitOrderTaskCreated(orderId, taskId);
     }
 
     // we might need to pass extra args to create and store the TaskId
-    function createTask2(uint dcafOrderId, uint timePeriod) internal {
+    function createTask2(uint lcafOrderId, uint timePeriod) internal {
         ModuleData memory moduleData = ModuleData({
             modules: new Module[](3),
             args: new bytes[](3)
@@ -152,12 +165,12 @@ contract dCafProtocol is AutomateTaskCreator {
 
         bytes32 taskId = _createTask(
             address(this),
-            abi.encode(this.executeGelatoTask2, (dcafOrderId)),
+            abi.encode(this.executeGelatoTask2, (lcafOrderId)),
             moduleData,
             address(0)
         );
 
-        dcafOrders[dcafOrderId].task2Id = taskId;
+        lcafOrders[lcafOrderId].task2Id = taskId;
         /// Here we just pass the function selector we are looking to execute
 
         // emit limitOrderTaskCreated(orderId, taskId);
@@ -200,9 +213,9 @@ contract dCafProtocol is AutomateTaskCreator {
 
     // Prepare the right payload with the proper inputs for executing the limitSwap
     function limitChecker(
-        uint dcafOrderId
+        uint lcafOrderId
     ) external returns (bool canExec, bytes memory execPayload) {
-        DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
+        LCAfOrder memory _lcafOrder = lcafOrders[lcafOrderId];
 
         uint amountPrice = 1 ether;
         (uint256 amountOut, , , ) = _quoteSwapSingle(
@@ -215,10 +228,7 @@ contract dCafProtocol is AutomateTaskCreator {
         // limit Price should be in wei format onlys
         canExec = (amountOut == _limitOrder.limitPrice) ? true : false;
         if (canExec) {
-            execPayload = abi.encodeCall(
-                this.executeGelatoTask1,
-                (dcafOrderId)
-            );
+            execPayload = abi.encodeCall(this.executeGelatoTask, (lcafOrderId));
         } else {
             execPayload = abi.encode("Freq time did not pass");
         }
