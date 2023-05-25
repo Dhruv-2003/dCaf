@@ -4,13 +4,42 @@ pragma solidity ^0.8.13;
 import "../interfaces/Gelato/AutomateTaskCreator.sol";
 
 import {ISuperfluid} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
-
 import {ISuperToken} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
-
 import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+// SUPERFLUID
+// - Wrap ERC20 tokens -- user has erc20 tokens
+// - Unwrap ERC20 tokens -- user has super tokenAddress
+// - Create Stream by Operator
+// - Update Stream by Operator
+// - Delete Stream by Operator
+// - updateOperator permissions
+// - AuitorizeFullOperator
+// - Revoke Full Operator
+
+// Dollar Cost Average
+// - StartDCA - to start the dcaProcess, with rate, timePeriod, token and assetToBuy
+// - updateDCA - update stream and tasks
+// - cancelDCA - cancel all the task associated , cancel the stream and refund any extra amount we receive
+// - refundExtraTokens - refund the token rcvd extra
+
+// Uniswap
+// - swap() - takes in a token for amount and returns back the other
+
+// Gelato
+// - createTask()
+// - cancelTask()
+// - checker()
+
+// Extra
+// - beforeSwap() - unwraps the token before swapping and call swap
+// - afterSwap() -  send the exchanged tokens to the user directly
+// - cancelDCATask() - after time period is over , it will cancel the task1 and the stream
 
 contract dCafProtocol is AutomateTaskCreator {
     using SuperTokenV1Library for ISuperToken;
+
     // ISuperToken public token;
 
     constructor(
@@ -22,16 +51,14 @@ contract dCafProtocol is AutomateTaskCreator {
                            Superfluid
     //////////////////////////////////////////////////////////////*/
 
-    function wrapSuperToken() internal {
-
+    function wrapSuperToken() public {
         // approving
-IERC20(underlyingTokenAddress).approve(superTokenAddress, amountToWrap)
-
-// wrapping
-ISuperToken(superTokenAddress).upgrade(amountToWrap);
+        IERC20(underlyingTokenAddress).approve(superTokenAddress, amountToWrap);
+        // wrapping
+        ISuperToken(superTokenAddress).upgrade(amountToWrap);
     }
 
-    function unwrapSuperToken() internal {}
+    function unwrapSuperToken() public {}
 
     /*///////////////////////////////////////////////////////////////
                            Gelato executions
