@@ -42,10 +42,42 @@ contract dCafProtocol is AutomateTaskCreator {
 
     // ISuperToken public token;
 
+    struct DCAfOrder {
+        address creator;
+        address tokenIn; // to send
+        address superToken; // token streamed
+        address tokenOut; // to buy
+        uint256 streamRate;
+        uint256 timePeriod;
+        uint256 dcfaFreq;
+        uint256 lastTradeTimeStamp;
+        bool activeStatus;
+        bytes32 task1Id;
+        bytes32 task2Id;
+    }
+
+    uint public totaldcafOrders;
+    mapping(uint => DCAfOrder) public dcafOrders;
+
     constructor(
         address payable _automate,
         address _fundsOwner
     ) AutomateTaskCreator(_automate, _fundsOwner) {}
+
+    /*///////////////////////////////////////////////////////////////
+                           Extras
+    //////////////////////////////////////////////////////////////*/
+    function executeGelatoTask() public {}
+
+    function exectueGelatoTask2() public {}
+
+    function executeGelatoTask1() public {}
+
+    function beforeSwap() public {}
+
+    function afterSwap() public {}
+
+    function cancelDCATask() internal {}
 
     /*///////////////////////////////////////////////////////////////
                            Superfluid
@@ -64,12 +96,16 @@ contract dCafProtocol is AutomateTaskCreator {
                            Gelato executions
     //////////////////////////////////////////////////////////////*/
 
-    function depositForFees() external payable {
+    function depositGelatoFees() external payable {
         _depositFunds(msg.value, ETH);
     }
 
-    // we might need to pass extra args to create and store the TaskId
-    function createTask(uint orderId) internal {
+    // address(0) for ETH
+    function withdrawGealtoFees(uint256 _amount, address _token) external {
+        withdrawFunds(_amount, _token);
+    }
+
+    function createTask(uint dcafOrderId) internal {
         ModuleData memory moduleData = ModuleData({
             modules: new Module[](3),
             args: new bytes[](3)
@@ -82,7 +118,7 @@ contract dCafProtocol is AutomateTaskCreator {
         // we can pass any arg we want in the encodeCall
         moduleData.args[0] = _resolverModuleArg(
             address(this),
-            abi.encodeCall(this.checker, (orderId))
+            abi.encodeCall(this.limitChecker, (dcafOrder))
         );
         moduleData.args[1] = _proxyModuleArg();
         moduleData.args[2] = _singleExecModuleArg();
@@ -94,15 +130,77 @@ contract dCafProtocol is AutomateTaskCreator {
             address(0)
         );
 
-        limitOrders[orderId].taskId = taskId;
+        dcafOrders[dcafOrderId].task1Id = taskId;
         /// Here we just pass the function selector we are looking to execute
 
-        emit limitOrderTaskCreated(orderId, taskId);
+        // emit limitOrderTaskCreated(orderId, taskId);
+    }
+
+    function createTask1(uint dcafOrderId, uint frequency) internal {
+        ModuleData memory moduleData = ModuleData({
+            modules: new Module[](2),
+            args: new bytes[](2)
+        });
+
+        moduleData.modules[0] = Module.TIME;
+        moduleData.modules[1] = Module.PROXY;
+        // moduleData.modules[2] = Module.SINGLE_EXEC;
+
+        // we can pass any arg we want in the encodeCall
+        moduleData.args[0] = _timeModuleArg(block.timestamp, interval);
+        moduleData.args[1] = _proxyModuleArg();
+        // moduleData.args[2] = _singleExecModuleArg();
+
+        bytes32 taskId = _createTask(
+            address(this),
+            abi.encode(this.executeGelatoTask1, (dcafOrderId)),
+            moduleData,
+            address(0)
+        );
+
+        dcafOrders[dcafOrderId].task2Id = taskId;
+        /// Here we just pass the function selector we are looking to execute
+
+        // emit limitOrderTaskCreated(orderId, taskId);
+    }
+
+    // we might need to pass extra args to create and store the TaskId
+    function createTask2(uint dcafOrderId, uint timePeriod) internal {
+        ModuleData memory moduleData = ModuleData({
+            modules: new Module[](3),
+            args: new bytes[](3)
+        });
+
+        moduleData.modules[0] = Module.TIME;
+        moduleData.modules[1] = Module.PROXY;
+        moduleData.modules[2] = Module.SINGLE_EXEC;
+
+        // we can pass any arg we want in the encodeCall
+        moduleData.args[0] = _timeModuleArg(block.timestamp, interval);
+        moduleData.args[1] = _proxyModuleArg();
+        moduleData.args[2] = _singleExecModuleArg();
+
+        bytes32 taskId = _createTask(
+            address(this),
+            abi.encode(this.executeGelatoTask2, (dcafOrderId)),
+            moduleData,
+            address(0)
+        );
+
+        dcafOrders[dcafOrderId].task2Id = taskId;
+        /// Here we just pass the function selector we are looking to execute
+
+        // emit limitOrderTaskCreated(orderId, taskId);
+    }
+
+    function cancelTask(bytes32 taskId) public {
+        /// add restrictions
+        _cancelTask(taskId);
     }
 
     // the args will be decided on the basis of the web3 function we create and the task we add
     // @note - not ready to use , as we need to use a differnt Automate Contract for that
-    function createFunctionTask(
+    function createWeb3FunctionTask(
         string memory _web3FunctionHash,
         bytes calldata _web3FunctionArgsHex
     ) internal {
@@ -131,24 +229,28 @@ contract dCafProtocol is AutomateTaskCreator {
     }
 
     // Prepare the right payload with the proper inputs for executing the limitSwap
-    function checker(
-        uint orderId
+    function limitChecker(
+        uint dcafOrderId
     ) external returns (bool canExec, bytes memory execPayload) {
-        LimitOrder memory _limitOrder = limitOrders[orderId];
-        uint amountPrice = 1 ether;
+        DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
 
-        /// fetching the price for 1
+        uint amountPrice = 1 ether;
         (uint256 amountOut, , , ) = _quoteSwapSingle(
             _limitOrder.tokenIn,
             _limitOrder.tokenOut,
             amountPrice
         );
+        // amountOut is also in wei format
 
+        // limit Price should be in wei format onlys
         canExec = (amountOut == _limitOrder.limitPrice) ? true : false;
         if (canExec) {
-            execPayload = abi.encodeCall(this.executeGelatoTask, (orderId));
+            execPayload = abi.encodeCall(
+                this.executeGelatoTask1,
+                (dcafOrderId)
+            );
         } else {
-            execPayload = abi.encode("Price Not matched");
+            execPayload = abi.encode("Freq time did not pass");
         }
     }
 }
