@@ -1,13 +1,37 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "./interfaces/Gelato/AutomateTaskCreator.sol";
+import "../interfaces/Gelato/AutomateTaskCreator.sol";
+
+import {ISuperfluid} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
+
+import {ISuperToken} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
+
+import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 
 contract dCafProtocol is AutomateTaskCreator {
+    using SuperTokenV1Library for ISuperToken;
+    // ISuperToken public token;
+
     constructor(
         address payable _automate,
         address _fundsOwner
     ) AutomateTaskCreator(_automate, _fundsOwner) {}
+
+    /*///////////////////////////////////////////////////////////////
+                           Superfluid
+    //////////////////////////////////////////////////////////////*/
+
+    function wrapSuperToken() internal {
+
+        // approving
+IERC20(underlyingTokenAddress).approve(superTokenAddress, amountToWrap)
+
+// wrapping
+ISuperToken(superTokenAddress).upgrade(amountToWrap);
+    }
+
+    function unwrapSuperToken() internal {}
 
     /*///////////////////////////////////////////////////////////////
                            Gelato executions
