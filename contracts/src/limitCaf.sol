@@ -67,8 +67,7 @@ contract dCafProtocol is AutomateTaskCreator {
     /*///////////////////////////////////////////////////////////////
                            Extras
     //////////////////////////////////////////////////////////////*/
-
-    function exectueGelatoTask2() public {}
+    function executeGelatoTask() public {}
 
     function executeGelatoTask1() public {}
 
@@ -104,29 +103,32 @@ contract dCafProtocol is AutomateTaskCreator {
         withdrawFunds(_amount, _token);
     }
 
-    function createTask1(uint dcafOrderId, uint frequency) internal {
+    function createTask(uint dcafOrderId) internal {
         ModuleData memory moduleData = ModuleData({
-            modules: new Module[](2),
-            args: new bytes[](2)
+            modules: new Module[](3),
+            args: new bytes[](3)
         });
 
-        moduleData.modules[0] = Module.TIME;
+        moduleData.modules[0] = Module.RESOLVER;
         moduleData.modules[1] = Module.PROXY;
-        // moduleData.modules[2] = Module.SINGLE_EXEC;
+        moduleData.modules[2] = Module.SINGLE_EXEC;
 
         // we can pass any arg we want in the encodeCall
-        moduleData.args[0] = _timeModuleArg(block.timestamp, interval);
+        moduleData.args[0] = _resolverModuleArg(
+            address(this),
+            abi.encodeCall(this.limitChecker, (dcafOrder))
+        );
         moduleData.args[1] = _proxyModuleArg();
-        // moduleData.args[2] = _singleExecModuleArg();
+        moduleData.args[2] = _singleExecModuleArg();
 
         bytes32 taskId = _createTask(
             address(this),
-            abi.encode(this.executeGelatoTask1, (dcafOrderId)),
+            abi.encode(this.executeGelatoTask.selector),
             moduleData,
             address(0)
         );
 
-        dcafOrders[dcafOrderId].task2Id = taskId;
+        dcafOrders[dcafOrderId].task1Id = taskId;
         /// Here we just pass the function selector we are looking to execute
 
         // emit limitOrderTaskCreated(orderId, taskId);
@@ -196,6 +198,32 @@ contract dCafProtocol is AutomateTaskCreator {
         /// Here we just pass the function selector we are looking to execute
     }
 
+    // Prepare the right payload with the proper inputs for executing the limitSwap
+    function limitChecker(
+        uint dcafOrderId
+    ) external returns (bool canExec, bytes memory execPayload) {
+        DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
+
+        uint amountPrice = 1 ether;
+        (uint256 amountOut, , , ) = _quoteSwapSingle(
+            _limitOrder.tokenIn,
+            _limitOrder.tokenOut,
+            amountPrice
+        );
+        // amountOut is also in wei format
+
+        // limit Price should be in wei format onlys
+        canExec = (amountOut == _limitOrder.limitPrice) ? true : false;
+        if (canExec) {
+            execPayload = abi.encodeCall(
+                this.executeGelatoTask1,
+                (dcafOrderId)
+            );
+        } else {
+            execPayload = abi.encode("Freq time did not pass");
+        }
+    }
+
     /*///////////////////////////////////////////////////////////////
                            Uniswap functions
     //////////////////////////////////////////////////////////////*/
@@ -244,5 +272,55 @@ contract dCafProtocol is AutomateTaskCreator {
 
         // Executes the swap.
         amountOut = swapRouter.exactInput(params);
+    }
+
+    function _quoteSwapMulti(
+        bytes memory path,
+        uint256 amountIn
+    )
+        internal
+        returns (
+            uint256 amountOut,
+            uint160[] memory sqrtPriceX96AfterList,
+            uint32[] memory initializedTicksCrossedList,
+            uint256 gasEstimate
+        )
+    {
+        (
+            amountOut,
+            sqrtPriceX96AfterList,
+            initializedTicksCrossedList,
+            gasEstimate
+        ) = quoter.quoteExactInput(path, amountIn);
+    }
+
+    function _quoteSwapSingle(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn
+    )
+        internal
+        returns (
+            uint256 amountOut,
+            uint160 sqrtPriceX96After,
+            uint32 initializedTicksCrossed,
+            uint256 gasEstimate
+        )
+    {
+        IQuoterV2.QuoteExactInputSingleParams memory params = IQuoterV2
+            .QuoteExactInputSingleParams({
+                tokenIn: tokenIn,
+                tokenOut: tokenOut,
+                amountIn: amountIn,
+                fee: poolFee,
+                sqrtPriceLimitX96: sqrtPriceLimitX96
+            });
+
+        (
+            amountOut,
+            sqrtPriceX96After,
+            initializedTicksCrossed,
+            gasEstimate
+        ) = quoter.quoteExactInputSingle(params);
     }
 }
