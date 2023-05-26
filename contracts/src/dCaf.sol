@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "../interfaces/Gelato/AutomateTaskCreator.sol";
-
+import "./dcaWallet.sol";
 import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 // import {CFAv1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/CFAv1Library.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -12,6 +12,7 @@ import {ISETH} from "@superfluid-finance/ethereum-contracts/contracts/interfaces
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/IQuoterV2.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 // SUPERFLUID
 // - Wrap ERC20 tokens -- user has erc20 tokens
@@ -42,29 +43,25 @@ import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 // - afterSwap() -  send the exchanged tokens to the user directly
 // - cancelDCATask() - after time period is over , it will cancel the task1 and the stream
 
-contract dCafProtocol is AutomateTaskCreator {
+contract dCafProtocol is AutomateTaskCreator, Ownable {
     using SuperTokenV1Library for ISuperToken;
     ISwapRouter public immutable swapRouter;
 
-    address public owner;
-
     mapping(address => bool) public accountList;
-
-    constructor(address _owner) {
-        owner = _owner;
-    }
 
     // ISuperToken public token;
 
     struct DCAfOrder {
         address creator;
+        address wallet;
         address tokenIn; // to send
         address superToken; // token streamed
         address tokenOut; // to buy
-        uint256 streamRate;
+        int96 flowRate;
         uint256 timePeriod;
-        uint256 dcfaFreq;
+        uint256 dcafFreq;
         uint256 lastTradeTimeStamp;
+        uint256 creationTimeStamp;
         bool activeStatus;
         bytes32 task1Id;
         bytes32 task2Id;
@@ -82,18 +79,104 @@ contract dCafProtocol is AutomateTaskCreator {
     }
 
     /*///////////////////////////////////////////////////////////////
+                           Dollar Cost Average
+    //////////////////////////////////////////////////////////////*/
+
+    function createDCA(
+        address superToken,
+        address tokenOut,
+        int96 flowRate,
+        uint timePeriod, // only in sec
+        uint dcafFreq // only in sec
+    ) external returns (uint dcafOrderID) {
+        // verify superToken , if valid or not
+        totaldcafOrders += 1;
+        dcafOrderID = totaldcafOrders;
+        address tokenIn = ISuperToken(superToken).getUnderlyingToken();
+        DCAfOrder memory _order = DCAfOrder({
+            creator: msg.sender,
+            wallet: address(0),
+            tokenIn: tokenIn,
+            superToken: superToken,
+            tokenOut: tokenOut,
+            flowRate: flowRate,
+            timePeriod: timePeriod,
+            dcafFreq: dcafFreq,
+            lastTradeTimeStamp: block.timestamp,
+            creationTimeStamp: block.timestamp,
+            activeStatus: true,
+            task1Id: bytes32(0),
+            task2Id: bytes32(0)
+        });
+
+        // create new dcaWallet for user
+        dcaWallet _wallet = new dcaWallet(
+            address(automate),
+            msg.sender,
+            address(swapRouter),
+            address(this),
+            dcafOrderID,
+            _order
+        );
+        // storing the record
+        _order.wallet = address(_wallet);
+
+        //createStream to the wallet
+        createStream(superToken, msg.sender, address(_wallet), flowRate);
+
+        // deposit fees for Gelato in wallet
+
+        // Task 1 to exectue the dcafOrder on the freq in the wallet
+        bytes32 task1Id = _wallet.createTask1(dcafFreq);
+        _order.task1Id = task1Id;
+        // Task 2 to close the dcafOrder later in the wallet
+        bytes32 task2Id = _wallet.createTask2(dcafOrderId, timePeriod);
+        _order.task2Id = task2Id;
+        dcafOrders[dcafOrderID] = _order;
+    }
+
+    function updateDCA() external {}
+
+    function cancelDCA() external {}
+
+    function refundDCA() external {}
+
+    /*///////////////////////////////////////////////////////////////
                            Extras
     //////////////////////////////////////////////////////////////*/
 
-    function exectueGelatoTask2() public {}
+    function exectueGelatoTask2(uint dcafOrderId) public {
+        DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
+        require(_dcafOrder.activeStatus, "Already Cancelled");
+        require(
+            block.timestamp >
+                _dcafOrder.creationTimeStamp + _dcafOrder.timePeriod,
+            "Time Period not crossed"
+        );
+        cancelDCATask(
+            _dcafOrder.wallet,
+            _dcafOrder.task1Id,
+            _dcafOrder.creator,
+            _dcafOrder.superToken
+        );
+        _dcafOrder.activeStatus = false;
+    }
 
-    function executeGelatoTask1() public {}
+    function cancelDCATask(
+        address _wallet,
+        bytes32 task1Id,
+        address creator,
+        address superToken
+    ) internal {
+        // cancel Task1 in the wallet contract
+        dcaWallet(_wallet).cancelTask(task1Id);
 
-    function beforeSwap() public {}
+        // cancel the stream incoming
+        deleteFlowToContract(superToken, creator);
 
-    function afterSwap() public {}
-
-    function cancelDCATask() internal {}
+        // refund the extra tokens lying
+        dcaWallet(_wallet).refundSuperToken(superToken);
+    }
 
     /*///////////////////////////////////////////////////////////////
                            Superfluid
@@ -163,33 +246,48 @@ contract dCafProtocol is AutomateTaskCreator {
         ISuperToken(superTokenAddress).downgrade(amountToUnwrap);
     }
 
-    function createStream(
+    function createStreamToContract(
         address token,
-        // address receiver,
+        address from,
+        address to,
         int96 flowRate
-    ) external {
-        if (!accountList[msg.sender] && msg.sender != owner)
-            revert Unauthorized();
+    ) public {
+        if (
+            !accountList[msg.sender] ||
+            msg.sender != _owner ||
+            msg.sender != address(this)
+        ) revert Unauthorized();
 
-        ISuperToken(token).createFlowFrom(msg.sender, address(this), flowRate);
+        ISuperToken(token).createFlowFrom(from, to, flowRate);
     }
 
-    function updateFlowFromContract(
+    function updateFlowToContract(
         address token,
-        // address receiver,
+        address from,
+        address to,
         int96 flowRate
-    ) external {
-        if (!accountList[msg.sender] && msg.sender != owner)
-            revert Unauthorized();
+    ) public {
+        if (
+            !accountList[msg.sender] ||
+            msg.sender != _owner ||
+            msg.sender != address(this)
+        ) revert Unauthorized();
 
-        ISuperToken(token).updateFlowFrom(msg.sender, address(this), flowRate);
+        ISuperToken(token).updateFlowFrom(from, to, flowRate);
     }
 
-    function deleteFlowFromContract(address token) external {
-        if (!accountList[msg.sender] && msg.sender != owner)
-            revert Unauthorized();
+    function deleteFlowToContract(
+        address token,
+        address from,
+        address to
+    ) public {
+        if (
+            !accountList[msg.sender] ||
+            msg.sender != _owner ||
+            msg.sender != address(this)
+        ) revert Unauthorized();
 
-        ISuperToken(token).deleteFlowFrom(msg.sender, address(this));
+        ISuperToken(token).deleteFlowFrom(from, to);
     }
 
     function updatePermissions(
@@ -200,7 +298,7 @@ contract dCafProtocol is AutomateTaskCreator {
         bool allowDelete,
         int96 flowRateAllowance
     ) external {
-        if (!accountList[msg.sender] && msg.sender != owner)
+        if (!accountList[msg.sender] && msg.sender != _owner)
             revert Unauthorized();
         token.setFlowPermissions(
             token,
@@ -216,7 +314,7 @@ contract dCafProtocol is AutomateTaskCreator {
         ISuperToken token,
         address flowOperator
     ) external {
-        if (!accountList[msg.sender] && msg.sender != owner)
+        if (!accountList[msg.sender] && msg.sender != _owner)
             revert Unauthorized();
         token.setFlowPermissions(token, flowOperator);
     }
@@ -225,7 +323,7 @@ contract dCafProtocol is AutomateTaskCreator {
         ISuperToken token,
         address flowOperator
     ) external {
-        if (!accountList[msg.sender] && msg.sender != owner)
+        if (!accountList[msg.sender] && msg.sender != _owner)
             revert Unauthorized();
         token.revokeFlowPermissions(token, flowOperator);
     }
@@ -267,9 +365,8 @@ contract dCafProtocol is AutomateTaskCreator {
             address(0)
         );
 
-        dcafOrders[dcafOrderId].task2Id = taskId;
+        dcafOrders[dcafOrderId].task1Id = taskId;
         /// Here we just pass the function selector we are looking to execute
-
         // emit limitOrderTaskCreated(orderId, taskId);
     }
 
