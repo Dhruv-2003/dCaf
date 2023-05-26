@@ -3,10 +3,10 @@ pragma solidity ^0.8.13;
 
 import "../interfaces/Gelato/AutomateTaskCreator.sol";
 
-import {ISuperfluid} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
-import {ISuperToken} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+// import {CFAv1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/CFAv1Library.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ISuperfluid, ISuperToken, ISuperApp} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
 
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/IQuoterV2.sol";
@@ -44,6 +44,14 @@ import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 contract dCafProtocol is AutomateTaskCreator {
     using SuperTokenV1Library for ISuperToken;
     ISwapRouter public immutable swapRouter;
+
+    address public owner;
+
+    mapping(address => bool) public accountList;
+
+    constructor(address _owner) {
+        owner = _owner;
+    }
 
     // ISuperToken public token;
 
@@ -97,7 +105,82 @@ contract dCafProtocol is AutomateTaskCreator {
         ISuperToken(superTokenAddress).upgrade(amountToWrap);
     }
 
-    function unwrapSuperToken() public {}
+    function unwrapSuperToken() public {
+        // unwrapping
+        ISuperToken(superTokenAddress).downgrade(amountToUnwrap);
+    }
+
+    function createStream(
+        ISuperToken token,
+        address receiver,
+        int96 flowRate
+    ) external {
+        if (!accountList[msg.sender] && msg.sender != owner)
+            revert Unauthorized();
+
+        token.createFlow(receiver, flowRate);
+    }
+
+    function updateFlowFromContract(
+        ISuperToken token,
+        address receiver,
+        int96 flowRate
+    ) external {
+        if (!accountList[msg.sender] && msg.sender != owner)
+            revert Unauthorized();
+
+        token.updateFlow(receiver, flowRate);
+    }
+
+    function deleteFlowFromContract(
+        ISuperToken token,
+        address receiver
+    ) external {
+        if (!accountList[msg.sender] && msg.sender != owner)
+            revert Unauthorized();
+
+        token.deleteFlow(address(this), receiver);
+    }
+
+    function updatePermissions(
+        ISuperToken token,
+        address flowOperator,
+        bool allowCreate,
+        bool allowUpdate,
+        bool allowDelete,
+        int96 flowRateAllowance
+    ) external {
+        if (!accountList[msg.sender] && msg.sender != owner)
+            revert Unauthorized();
+        token.setFlowPermissions(
+            token,
+            flowOperator,
+            allowCreate,
+            allowUpdate,
+            allowDelete,
+            flowRateAllowance
+        );
+    }
+
+    function fullAuthorization(
+        ISuperToken token,
+        address flowOperator
+    ) external {
+        if (!accountList[msg.sender] && msg.sender != owner)
+            revert Unauthorized();
+        token.setFlowPermissions(token, flowOperator);
+    }
+
+    function revokeAuthorization(
+        ISuperToken token,
+        address flowOperator
+    ) external {
+        if (!accountList[msg.sender] && msg.sender != owner)
+            revert Unauthorized();
+        token.revokeFlowPermissions(token, flowOperator);
+    }
+
+    // updating stream permissions
 
     /*///////////////////////////////////////////////////////////////
                            Gelato executions
