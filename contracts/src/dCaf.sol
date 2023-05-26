@@ -7,6 +7,7 @@ import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contra
 // import {CFAv1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/CFAv1Library.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISuperfluid, ISuperToken, ISuperApp} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
+import {ISETH} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/tokens/ISETH.sol";
 
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/IQuoterV2.sol";
@@ -98,48 +99,97 @@ contract dCafProtocol is AutomateTaskCreator {
                            Superfluid
     //////////////////////////////////////////////////////////////*/
 
-    function wrapSuperToken() public {
-        // approving
+    function wrapSuperToken(
+        address token,
+        address superTokenAddress,
+        uint amountToWrap
+    ) external {
+        // User has to approve before calling the wrapSuperToken
+        // Getting tokens from the user
+        IERC20(token).transferFrom(msg.sender, address(this), amountToWrap);
+
+        // approving to transfer tokens from this to superTokenAddress
         IERC20(underlyingTokenAddress).approve(superTokenAddress, amountToWrap);
-        // wrapping
+
+        // wrapping and sent to this contract
+        ISuperToken(superTokenAddress).upgrade(amountToWrap);
+
+        // sending back the superToken to the user
+        ISuperToken(superTokenAddress).transfer(msg.sender, amountToWrap);
+    }
+
+    function unwrapSuperToken(
+        address superTokenAddress,
+        uint amountToUnwrap
+    ) external {
+        // sending supertoken from user ton contract
+        ISuperToken(superTokenAddress).transferFrom(
+            msg.sender,
+            address(this),
+            amountToWrap
+        );
+        // unwrapping
+        ISuperToken(superTokenAddress).downgrade(amountToUnwrap);
+
+        // get token
+        address underlyingToken = ISuperToken(superTokenAddress)
+            .getUnderlyingToken();
+
+        // transfer to user
+        IERC20(underlyingToken).transferFrom(
+            address(this),
+            msg.sender,
+            amountToWrap
+        );
+    }
+
+    function wrapSuperToken(
+        address token,
+        address superTokenAddress,
+        uint amountToWrap
+    ) internal {
+        // approving to transfer tokens from this to superTokenAddress
+        IERC20(underlyingTokenAddress).approve(superTokenAddress, amountToWrap);
+
+        // wrapping and sent to this contract
         ISuperToken(superTokenAddress).upgrade(amountToWrap);
     }
 
-    function unwrapSuperToken() public {
+    function unwrapSuperToken(
+        address superTokenAddress,
+        uint amountToUnwrap
+    ) internal {
         // unwrapping
         ISuperToken(superTokenAddress).downgrade(amountToUnwrap);
     }
 
     function createStream(
-        ISuperToken token,
-        address receiver,
+        address token,
+        // address receiver,
         int96 flowRate
     ) external {
         if (!accountList[msg.sender] && msg.sender != owner)
             revert Unauthorized();
 
-        token.createFlow(receiver, flowRate);
+        ISuperToken(token).createFlowFrom(msg.sender, address(this), flowRate);
     }
 
     function updateFlowFromContract(
-        ISuperToken token,
-        address receiver,
+        address token,
+        // address receiver,
         int96 flowRate
     ) external {
         if (!accountList[msg.sender] && msg.sender != owner)
             revert Unauthorized();
 
-        token.updateFlow(receiver, flowRate);
+        ISuperToken(token).updateFlowFrom(msg.sender, address(this), flowRate);
     }
 
-    function deleteFlowFromContract(
-        ISuperToken token,
-        address receiver
-    ) external {
+    function deleteFlowFromContract(address token) external {
         if (!accountList[msg.sender] && msg.sender != owner)
             revert Unauthorized();
 
-        token.deleteFlow(address(this), receiver);
+        ISuperToken(token).deleteFlowFrom(msg.sender, address(this));
     }
 
     function updatePermissions(
