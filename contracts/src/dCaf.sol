@@ -10,7 +10,6 @@ import {ISuperfluid, ISuperToken, ISuperApp} from "@superfluid-finance/ethereum-
 import {ISETH} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/tokens/ISETH.sol";
 
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-import "@uniswap/v3-periphery/contracts/interfaces/IQuoterV2.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -93,14 +92,16 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
     /*///////////////////////////////////////////////////////////////
                            Dollar Cost Average
     //////////////////////////////////////////////////////////////*/
-
+    // Need to send Native for Gelaot
+    // Have Wrapped SuperToken
+    // Assigned this contract as operator
     function createDCA(
         address superToken,
         address tokenOut,
         int96 flowRate,
         uint timePeriod, // only in sec
         uint dcafFreq // only in sec
-    ) external returns (uint dcafOrderID) {
+    ) external payable returns (uint dcafOrderID) {
         // verify superToken , if valid or not
         totaldcafOrders += 1;
         dcafOrderID = totaldcafOrders;
@@ -132,6 +133,10 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         );
         // storing the record
         _order.wallet = address(_wallet);
+
+        // deposit some fees
+        require(msg.value>0,"SEND FEES FOR GELATO");
+        _wallet.depositGelatoFees{value: msg.value}();
 
         //createStream to the wallet
         createStreamToContract(superToken, msg.sender, address(_wallet), flowRate);
