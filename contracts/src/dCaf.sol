@@ -48,7 +48,7 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
     uint24 public constant poolFee = 3000;
     uint160 sqrtPriceLimitX96 = 0;
 
-    mapping(address => bool) public accountList;
+    // mapping(address => bool) public accountList;
     address payable public automateAddress;
 
     // ISuperToken public token;
@@ -295,11 +295,11 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         address to,
         int96 flowRate
     ) internal {
-        if (
-            !accountList[msg.sender] ||
-            msg.sender != owner() ||
-            msg.sender != address(this)
-        ) revert Unauthorized();
+        // if (
+        //     !accountList[msg.sender] ||
+        //     msg.sender != owner() ||
+        //     msg.sender != address(this)
+        // ) revert Unauthorized();
 
         ISuperToken(token).createFlowFrom(from, to, flowRate);
     }
@@ -310,11 +310,11 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         address to,
         int96 flowRate
     ) internal {
-        if (
-            !accountList[msg.sender] ||
-            msg.sender != owner() ||
-            msg.sender != address(this)
-        ) revert Unauthorized();
+        // if (
+        //     !accountList[msg.sender] ||
+        //     msg.sender != owner() ||
+        //     msg.sender != address(this)
+        // ) revert Unauthorized();
 
         ISuperToken(token).updateFlowFrom(from, to, flowRate);
     }
@@ -324,11 +324,11 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         address from,
         address to
     ) internal {
-        if (
-            !accountList[msg.sender] ||
-            msg.sender != owner() ||
-            msg.sender != address(this)
-        ) revert Unauthorized();
+        // if (
+        //     !accountList[msg.sender] ||
+        //     msg.sender != owner() ||
+        //     msg.sender != address(this)
+        // ) revert Unauthorized();
 
         ISuperToken(token).deleteFlowFrom(from, to);
     }
@@ -362,14 +362,14 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
     //     token.setFlowPermissions(flowOperator);
     // }
 
-    function revokeAuthorization(
-        ISuperToken token,
-        address flowOperator
-    ) external {
-        if (!accountList[msg.sender] && msg.sender != owner())
-            revert Unauthorized();
-        token.revokeFlowPermissions(flowOperator);
-    }
+    // function revokeAuthorization(
+    //     ISuperToken token,
+    //     address flowOperator
+    // ) external {
+    //     if (!accountList[msg.sender] && msg.sender != owner())
+    //         revert Unauthorized();
+    //     token.revokeFlowPermissions(flowOperator);
+    // }
 
     // updating stream permissions
 
