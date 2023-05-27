@@ -13,6 +13,7 @@ import {ISuperfluid, ISuperToken, ISuperApp} from "@superfluid-finance/ethereum-
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 
+import "./dCaf.sol";
 // Tasks
 // Receiving stream
 // Track a user's portfolio
@@ -21,25 +22,27 @@ import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 contract dcaWallet is Ownable, AutomateTaskCreator {
     using SuperTokenV1Library for ISuperToken;
     ISwapRouter public immutable swapRouter;
+    uint24 public constant poolFee = 3000;
+    uint160 sqrtPriceLimitX96 = 0;
 
     address public dcafManager;
     uint public dcafOrderId;
-    struct DCAfOrder {
-        address creator;
-        address wallet;
-        address tokenIn; // to send
-        address superToken; // token streamed
-        address tokenOut; // to buy
-        int96 flowRate;
-        uint256 timePeriod;
-        uint256 dcafFreq;
-        uint256 lastTradeTimeStamp;
-        uint256 creationTimeStamp;
-        bool activeStatus;
-        bytes32 task1Id;
-        bytes32 task2Id;
-    }
-    DCAfOrder public dcafOrder;
+    // struct DCAfOrder {
+    //     address creator;
+    //     address wallet;
+    //     address tokenIn; // to send
+    //     address superToken; // token streamed
+    //     address tokenOut; // to buy
+    //     int96 flowRate;
+    //     uint256 timePeriod;
+    //     uint256 dcafFreq;
+    //     uint256 lastTradeTimeStamp;
+    //     uint256 creationTimeStamp;
+    //     bool activeStatus;
+    //     bytes32 task1Id;
+    //     bytes32 task2Id;
+    // }
+    dCafProtocol.DCAfOrder public dcafOrder;
     uint public totalAmountTradedIn;
     uint public totalAmountTradedOut;
 
@@ -49,11 +52,12 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
         address _swapRouter,
         address _manager,
         uint _dcafOrderId,
-        DCAfOrder _order
+        dCafProtocol.DCAfOrder memory _order
     ) AutomateTaskCreator(_automate, _fundsOwner) {
         swapRouter = ISwapRouter(_swapRouter);
         dcafManager = _manager;
         dcafOrderId = _dcafOrderId;
+        dcafOrder = _order;
     }
 
     modifier onlyManager() {
@@ -65,12 +69,12 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
                            Extras
     //////////////////////////////////////////////////////////////*/
 
-    function executeGelatoTask1(uint dcafOrderId) public {
-        DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
-        require(_dcafOrder.activeStatus, "Not Active");
+    function executeGelatoTask1() public {
+        // DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
+        require(dcafOrder.activeStatus, "Not Active");
         require(
             block.timestamp >
-                _dcafOrder.lastTradeTimeStamp + _dcafOrder.dcafFreq,
+                dcafOrder.lastTradeTimeStamp + dcafOrder.dcafFreq,
             "Freq time not passed"
         );
 
@@ -82,7 +86,7 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
         // unwrap the token
         address superToken = dcafOrder.superToken;
         uint amountToUnWrap = ISuperToken(superToken).balanceOf(address(this));
-        unwrapSuperToken(superToken, amountToUnwrap);
+        unwrapSuperToken(superToken, amountToUnWrap);
 
         // get the underlying token
         address underlyingToken = ISuperToken(superToken).getUnderlyingToken();
@@ -114,7 +118,7 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
         uint amountToWrap
     ) internal {
         // approving to transfer tokens from this to superTokenAddress
-        IERC20(underlyingTokenAddress).approve(superTokenAddress, amountToWrap);
+        IERC20(token).approve(superTokenAddress, amountToWrap);
 
         // wrapping and sent to this contract
         ISuperToken(superTokenAddress).upgrade(amountToWrap);
@@ -129,7 +133,7 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
     }
 
     // refund the underlying superTokens in case the stream is cancelled
-    function refundSuperToken(address superToken) onlyManager {
+    function refundSuperToken(address superToken) public onlyManager {
         require(!dcafOrder.activeStatus, "STILL ACTIVE");
         uint amount = ISuperToken(superToken).balanceOf(address(this));
 
@@ -181,7 +185,7 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
     // we might need to pass extra args to create and store the TaskId
     // called in the manager
     function createTask2(
-        uint dcafOrderId,
+        uint _dcafOrderId,
         uint timePeriod
     ) external onlyManager returns (bytes32 taskId) {
         ModuleData memory moduleData = ModuleData({
@@ -200,7 +204,7 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
 
         taskId = _createTask(
             dcafManager,
-            abi.encode(this.executeGelatoTask2, (dcafOrderId)),
+            abi.encode(dCafProtocol.executeGelatoTask2.selector, (_dcafOrderId)),
             moduleData,
             address(0)
         );
@@ -211,7 +215,7 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
         // emit limitOrderTaskCreated(orderId, taskId);
     }
 
-    function cancelTask(bytes32 taskId) onlyManager {
+    function cancelTask(bytes32 taskId) public onlyManager {
         /// add restrictions
         _cancelTask(taskId);
 

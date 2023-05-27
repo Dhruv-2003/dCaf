@@ -46,8 +46,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract dCafProtocol is AutomateTaskCreator, Ownable {
     using SuperTokenV1Library for ISuperToken;
     ISwapRouter public immutable swapRouter;
+    uint24 public constant poolFee = 3000;
+    uint160 sqrtPriceLimitX96 = 0;
 
     mapping(address => bool) public accountList;
+    address payable public automateAddress;
 
     // ISuperToken public token;
 
@@ -76,6 +79,7 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         address _swapRouter
     ) AutomateTaskCreator(_automate, _fundsOwner) {
         swapRouter = ISwapRouter(_swapRouter);
+        automateAddress = _automate;
     }
 
     modifier onlyCreator(uint dcafOrderId) {
@@ -83,6 +87,8 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         require(msg.sender == creator, "NOT AUTHORISED");
         _;
     }
+
+    error Unauthorized();
 
     /*///////////////////////////////////////////////////////////////
                            Dollar Cost Average
@@ -117,7 +123,7 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
 
         // create new dcaWallet for user
         dcaWallet _wallet = new dcaWallet(
-            address(automate),
+            automateAddress,
             msg.sender,
             address(swapRouter),
             address(this),
@@ -128,7 +134,7 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         _order.wallet = address(_wallet);
 
         //createStream to the wallet
-        createStream(superToken, msg.sender, address(_wallet), flowRate);
+        createStreamToContract(superToken, msg.sender, address(_wallet), flowRate);
 
         // deposit fees for Gelato in wallet
 
@@ -136,7 +142,7 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         bytes32 task1Id = _wallet.createTask1(dcafFreq);
         _order.task1Id = task1Id;
         // Task 2 to close the dcafOrder later in the wallet
-        bytes32 task2Id = _wallet.createTask2(dcafOrderId, timePeriod);
+        bytes32 task2Id = _wallet.createTask2(dcafOrderID, timePeriod);
         _order.task2Id = task2Id;
         dcafOrders[dcafOrderID] = _order;
     }
@@ -160,15 +166,16 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         dcaWallet(_dcafOrder.wallet).cancelTask(_dcafOrder.task2Id);
 
         // cancel the stream incoming
-        deleteFlowToContract(superToken, creator);
+        deleteFlowToContract(_dcafOrder.superToken, _dcafOrder.creator , _dcafOrder.wallet);
 
         // refund the extra tokens lying
-        dcaWallet(_wallet).refundSuperToken(superToken);
+        dcaWallet(_dcafOrder.wallet).refundSuperToken(_dcafOrder.superToken);
     }
 
     // only refunds in case the task was cancelled
     function refundDCA(uint dcafOrderId) external onlyCreator(dcafOrderId) {
-        dcaWallet(_wallet).refundSuperToken(superToken);
+         DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
+        dcaWallet(_dcafOrder.wallet).refundSuperToken(_dcafOrder.superToken);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -176,7 +183,7 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
     //////////////////////////////////////////////////////////////*/
 
     // Add restrictions
-    function exectueGelatoTask2(uint dcafOrderId) public {
+    function executeGelatoTask2(uint dcafOrderId) public {
         DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
         require(_dcafOrder.activeStatus, "Already Cancelled");
         require(
@@ -203,7 +210,7 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         dcaWallet(_wallet).cancelTask(task1Id);
 
         // cancel the stream incoming
-        deleteFlowToContract(superToken, creator);
+        deleteFlowToContract(superToken, creator,_wallet);
 
         // // refund the extra tokens lying
         // dcaWallet(_wallet).refundSuperToken(superToken);
@@ -213,7 +220,7 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
                            Superfluid
     //////////////////////////////////////////////////////////////*/
 
-    function wrapSuperToken(
+    function wrapSuperTokenUser(
         address token,
         address superTokenAddress,
         uint amountToWrap
@@ -223,7 +230,7 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         IERC20(token).transferFrom(msg.sender, address(this), amountToWrap);
 
         // approving to transfer tokens from this to superTokenAddress
-        IERC20(underlyingTokenAddress).approve(superTokenAddress, amountToWrap);
+        IERC20(token).approve(superTokenAddress, amountToWrap);
 
         // wrapping and sent to this contract
         ISuperToken(superTokenAddress).upgrade(amountToWrap);
@@ -232,15 +239,15 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         ISuperToken(superTokenAddress).transfer(msg.sender, amountToWrap);
     }
 
-    function unwrapSuperToken(
+    function unwrapSuperTokenUser(
         address superTokenAddress,
         uint amountToUnwrap
     ) external {
-        // sending supertoken from user ton contract
+        // sending supertoken from user to contract
         ISuperToken(superTokenAddress).transferFrom(
             msg.sender,
             address(this),
-            amountToWrap
+            amountToUnwrap
         );
         // unwrapping
         ISuperToken(superTokenAddress).downgrade(amountToUnwrap);
@@ -253,7 +260,7 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         IERC20(underlyingToken).transferFrom(
             address(this),
             msg.sender,
-            amountToWrap
+            amountToUnwrap
         );
     }
 
@@ -263,7 +270,7 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         uint amountToWrap
     ) internal {
         // approving to transfer tokens from this to superTokenAddress
-        IERC20(underlyingTokenAddress).approve(superTokenAddress, amountToWrap);
+        IERC20(token).approve(superTokenAddress, amountToWrap);
 
         // wrapping and sent to this contract
         ISuperToken(superTokenAddress).upgrade(amountToWrap);
@@ -282,10 +289,10 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         address from,
         address to,
         int96 flowRate
-    ) public {
+    ) internal {
         if (
             !accountList[msg.sender] ||
-            msg.sender != _owner ||
+            msg.sender != owner() ||
             msg.sender != address(this)
         ) revert Unauthorized();
 
@@ -297,10 +304,10 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         address from,
         address to,
         int96 flowRate
-    ) public {
+    ) internal {
         if (
             !accountList[msg.sender] ||
-            msg.sender != _owner ||
+            msg.sender != owner() ||
             msg.sender != address(this)
         ) revert Unauthorized();
 
@@ -311,52 +318,52 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         address token,
         address from,
         address to
-    ) public {
+    ) internal {
         if (
             !accountList[msg.sender] ||
-            msg.sender != _owner ||
+            msg.sender != owner() ||
             msg.sender != address(this)
         ) revert Unauthorized();
 
         ISuperToken(token).deleteFlowFrom(from, to);
     }
 
-    function updatePermissions(
-        ISuperToken token,
-        address flowOperator,
-        bool allowCreate,
-        bool allowUpdate,
-        bool allowDelete,
-        int96 flowRateAllowance
-    ) external {
-        if (!accountList[msg.sender] && msg.sender != _owner)
-            revert Unauthorized();
-        token.setFlowPermissions(
-            token,
-            flowOperator,
-            allowCreate,
-            allowUpdate,
-            allowDelete,
-            flowRateAllowance
-        );
-    }
+    // function updatePermissions(
+    //     ISuperToken token,
+    //     address flowOperator,
+    //     bool allowCreate,
+    //     bool allowUpdate,
+    //     bool allowDelete,
+    //     int96 flowRateAllowance
+    // ) external {
+    //     if (!accountList[msg.sender] && msg.sender != owner())
+    //         revert Unauthorized();
+    //     token.setFlowPermissions(
+    //         token,
+    //         flowOperator,
+    //         allowCreate,
+    //         allowUpdate,
+    //         allowDelete,
+    //         flowRateAllowance
+    //     );
+    // }
 
-    function fullAuthorization(
-        ISuperToken token,
-        address flowOperator
-    ) external {
-        if (!accountList[msg.sender] && msg.sender != _owner)
-            revert Unauthorized();
-        token.setFlowPermissions(token, flowOperator);
-    }
+    // function fullAuthorization(
+    //     ISuperToken token,
+    //     address flowOperator
+    // ) external {
+    //     if (!accountList[msg.sender] && msg.sender != owner())
+    //         revert Unauthorized();
+    //     token.setFlowPermissions(flowOperator);
+    // }
 
     function revokeAuthorization(
         ISuperToken token,
         address flowOperator
     ) external {
-        if (!accountList[msg.sender] && msg.sender != _owner)
+        if (!accountList[msg.sender] && msg.sender != owner())
             revert Unauthorized();
-        token.revokeFlowPermissions(token, flowOperator);
+        token.revokeFlowPermissions(flowOperator);
     }
 
     // updating stream permissions
@@ -374,96 +381,40 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         withdrawFunds(_amount, _token);
     }
 
-    function createTask1(uint dcafOrderId, uint frequency) internal {
-        ModuleData memory moduleData = ModuleData({
-            modules: new Module[](2),
-            args: new bytes[](2)
-        });
-
-        moduleData.modules[0] = Module.TIME;
-        moduleData.modules[1] = Module.PROXY;
-        // moduleData.modules[2] = Module.SINGLE_EXEC;
-
-        // we can pass any arg we want in the encodeCall
-        moduleData.args[0] = _timeModuleArg(block.timestamp, interval);
-        moduleData.args[1] = _proxyModuleArg();
-        // moduleData.args[2] = _singleExecModuleArg();
-
-        bytes32 taskId = _createTask(
-            address(this),
-            abi.encode(this.executeGelatoTask1, (dcafOrderId)),
-            moduleData,
-            address(0)
-        );
-
-        dcafOrders[dcafOrderId].task1Id = taskId;
-        /// Here we just pass the function selector we are looking to execute
-        // emit limitOrderTaskCreated(orderId, taskId);
-    }
-
-    // we might need to pass extra args to create and store the TaskId
-    function createTask2(uint dcafOrderId, uint timePeriod) internal {
-        ModuleData memory moduleData = ModuleData({
-            modules: new Module[](3),
-            args: new bytes[](3)
-        });
-
-        moduleData.modules[0] = Module.TIME;
-        moduleData.modules[1] = Module.PROXY;
-        moduleData.modules[2] = Module.SINGLE_EXEC;
-
-        // we can pass any arg we want in the encodeCall
-        moduleData.args[0] = _timeModuleArg(block.timestamp, interval);
-        moduleData.args[1] = _proxyModuleArg();
-        moduleData.args[2] = _singleExecModuleArg();
-
-        bytes32 taskId = _createTask(
-            address(this),
-            abi.encode(this.executeGelatoTask2, (dcafOrderId)),
-            moduleData,
-            address(0)
-        );
-
-        dcafOrders[dcafOrderId].task2Id = taskId;
-        /// Here we just pass the function selector we are looking to execute
-
-        // emit limitOrderTaskCreated(orderId, taskId);
-    }
-
-    function cancelTask(bytes32 taskId) public {
+    function cancelTask(bytes32 taskId) internal {
         /// add restrictions
         _cancelTask(taskId);
     }
 
     // the args will be decided on the basis of the web3 function we create and the task we add
     // @note - not ready to use , as we need to use a differnt Automate Contract for that
-    function createWeb3FunctionTask(
-        string memory _web3FunctionHash,
-        bytes calldata _web3FunctionArgsHex
-    ) internal {
-        ModuleData memory moduleData = ModuleData({
-            modules: new Module[](2),
-            args: new bytes[](2)
-        });
+    // function createWeb3FunctionTask(
+    //     string memory _web3FunctionHash,
+    //     bytes calldata _web3FunctionArgsHex
+    // ) internal {
+    //     ModuleData memory moduleData = ModuleData({
+    //         modules: new Module[](2),
+    //         args: new bytes[](2)
+    //     });
 
-        moduleData.modules[0] = Module.PROXY;
-        moduleData.modules[1] = Module.WEB3_FUNCTION;
+    //     moduleData.modules[0] = Module.PROXY;
+    //     moduleData.modules[1] = Module.WEB3_FUNCTION;
 
-        moduleData.args[0] = _proxyModuleArg();
-        moduleData.args[1] = _web3FunctionModuleArg(
-            _web3FunctionHash,
-            _web3FunctionArgsHex
-        );
+    //     moduleData.args[0] = _proxyModuleArg();
+    //     moduleData.args[1] = _web3FunctionModuleArg(
+    //         _web3FunctionHash,
+    //         _web3FunctionArgsHex
+    //     );
 
-        bytes32 id = _createTask(
-            address(this),
-            abi.encode(this.executeGelatoTask.selector),
-            moduleData,
-            address(0)
-        );
-        /// log the event with the Gelaot Task ID
-        /// Here we just pass the function selector we are looking to execute
-    }
+    //     bytes32 id = _createTask(
+    //         address(this),
+    //         abi.encode(this.executeGelatoTask.selector),
+    //         moduleData,
+    //         address(0)
+    //     );
+    //     /// log the event with the Gelaot Task ID
+    //     /// Here we just pass the function selector we are looking to execute
+    // }
 
     /*///////////////////////////////////////////////////////////////
                            Uniswap functions
