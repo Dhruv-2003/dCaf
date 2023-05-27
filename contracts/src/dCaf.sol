@@ -78,6 +78,12 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         swapRouter = ISwapRouter(_swapRouter);
     }
 
+    modifier onlyCreator(uint dcafOrderId) {
+        address creator = dcafOrders[dcafOrderId].creator;
+        require(msg.sender == creator, "NOT AUTHORISED");
+        _;
+    }
+
     /*///////////////////////////////////////////////////////////////
                            Dollar Cost Average
     //////////////////////////////////////////////////////////////*/
@@ -135,16 +141,41 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         dcafOrders[dcafOrderID] = _order;
     }
 
-    function updateDCA() external {}
+    // What can be updated ??
+    function updateDCA(uint dcafOrderId) external onlyCreator(dcafOrderId) {}
 
-    function cancelDCA() external {}
+    function cancelDCA(uint dcafOrderId) external onlyCreator(dcafOrderId) {
+        DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
+        require(_dcafOrder.activeStatus, "Already Cancelled");
+        require(
+            block.timestamp >
+                _dcafOrder.creationTimeStamp + _dcafOrder.timePeriod,
+            "Time Period not crossed"
+        );
 
-    function refundDCA() external {}
+        _dcafOrder.activeStatus = false;
+
+        // cancel Task1 & 2 in the wallet contract
+        dcaWallet(_dcafOrder.wallet).cancelTask(_dcafOrder.task1Id);
+        dcaWallet(_dcafOrder.wallet).cancelTask(_dcafOrder.task2Id);
+
+        // cancel the stream incoming
+        deleteFlowToContract(superToken, creator);
+
+        // refund the extra tokens lying
+        dcaWallet(_wallet).refundSuperToken(superToken);
+    }
+
+    // only refunds in case the task was cancelled
+    function refundDCA(uint dcafOrderId) external onlyCreator(dcafOrderId) {
+        dcaWallet(_wallet).refundSuperToken(superToken);
+    }
 
     /*///////////////////////////////////////////////////////////////
                            Extras
     //////////////////////////////////////////////////////////////*/
 
+    // Add restrictions
     function exectueGelatoTask2(uint dcafOrderId) public {
         DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
         require(_dcafOrder.activeStatus, "Already Cancelled");
@@ -153,13 +184,13 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
                 _dcafOrder.creationTimeStamp + _dcafOrder.timePeriod,
             "Time Period not crossed"
         );
+        _dcafOrder.activeStatus = false;
         cancelDCATask(
             _dcafOrder.wallet,
             _dcafOrder.task1Id,
             _dcafOrder.creator,
             _dcafOrder.superToken
         );
-        _dcafOrder.activeStatus = false;
     }
 
     function cancelDCATask(
@@ -174,8 +205,8 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         // cancel the stream incoming
         deleteFlowToContract(superToken, creator);
 
-        // refund the extra tokens lying
-        dcaWallet(_wallet).refundSuperToken(superToken);
+        // // refund the extra tokens lying
+        // dcaWallet(_wallet).refundSuperToken(superToken);
     }
 
     /*///////////////////////////////////////////////////////////////

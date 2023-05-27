@@ -40,6 +40,8 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
         bytes32 task2Id;
     }
     DCAfOrder public dcafOrder;
+    uint public totalAmountTradedIn;
+    uint public totalAmountTradedOut;
 
     constructor(
         address payable _automate,
@@ -73,17 +75,20 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
         );
 
         // exectue beforeSwap
+        beforeSwap();
     }
 
-    function beforeSwap(address superToken) public {
+    function beforeSwap() internal {
         // unwrap the token
+        address superToken = dcafOrder.superToken;
         uint amountToUnWrap = ISuperToken(superToken).balanceOf(address(this));
         unwrapSuperToken(superToken, amountToUnwrap);
 
+        // get the underlying token
         address underlyingToken = ISuperToken(superToken).getUnderlyingToken();
         require(underlyingToken == dcafOrder.tokenIn, "INVALID TOKEN");
 
-        // swap
+        // intitiate swap
         _swapUniswapSingle(
             dcafOrder.tokenIn,
             dcafOrder.tokenOut,
@@ -92,7 +97,12 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
         );
     }
 
-    function afterSwap() public {}
+    // save the total Trading stats
+    function afterSwap(uint amountIn, uint amountOut) internal {
+        dcafOrder.lastTradeTimeStamp = block.timestamp;
+        totalAmountTradedIn += amountIn;
+        totalAmountTradedOut += amountOut;
+    }
 
     /*///////////////////////////////////////////////////////////////
                            Superfluid
@@ -221,6 +231,7 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
         // Approve the router to spend the token
         TransferHelper.safeApprove(tokenIn, address(swapRouter), amountIn);
 
+        // preparing the params
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
             .ExactInputSingleParams({
                 tokenIn: tokenIn,
@@ -237,5 +248,6 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
         amountOut = swapRouter.exactInputSingle(params);
 
         // then afterSwap() has to be called
+        afterSwap(amountIn, amountOut);
     }
 }
