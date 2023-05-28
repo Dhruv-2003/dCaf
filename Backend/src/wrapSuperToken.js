@@ -1,8 +1,8 @@
 import { ethers } from "ethers";
 import { Framework, SuperToken } from "@superfluid-finance/sdk-core";
 // require("dotenv").config();
-const RPC_URL = "bZFiL-IFAMe4QAh9Q30gDQ7m1vxEss4u";
-const PRIV = "6d2f70a47ddf455feb6a785b9787265f28897546bd1316224300aed627ef8cfc";
+const RPC_URL = "";
+const PRIV = "";
 import { WMATICx_ABI, WMATICx_ADDRESS } from "../constants.js";
 const provider = new ethers.providers.AlchemyProvider("maticmum", RPC_URL);
 const signer = new ethers.Wallet(PRIV, provider);

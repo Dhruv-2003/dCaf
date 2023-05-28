@@ -128,6 +128,62 @@
 				"type": "event"
 			},
 			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amountIn",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amountOut",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "tokenIn",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "tokenOut",
+						"type": "address"
+					}
+				],
+				"name": "dcaSwapExecuted",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "caller",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					}
+				],
+				"name": "dcaTask1Executed",
+				"type": "event"
+			},
+			{
 				"inputs": [],
 				"name": "automate",
 				"outputs": [
@@ -759,19 +815,19 @@
 			]
 		},
 		"dCaf.sol": {
-			"keccak256": "0xb6d8d1e43364a3aab9c841af16a7c6b5991197600e255bd6b93982d0d1c41092",
+			"keccak256": "0x69ba0d1ed5a224f79300b66b951caa168d67665d984cc72d0ed61376de3d84e0",
 			"license": "UNLICENSED",
 			"urls": [
-				"bzz-raw://f291332f0372519b4b4bddec520bba0e769c2d730cd29496185ce72c51aaba9a",
-				"dweb:/ipfs/QmWXJcDgK65YjaptAfbiig2GhXmpRBTYfsVGEwPiwXSicv"
+				"bzz-raw://c31cf87eb45789d3585096c40f1a884016501be9fd75b9ce9972aa84008015d7",
+				"dweb:/ipfs/QmdS2s5W4a5zeECPDvCpNg2kMkDxsTMVUct4J9VafYfYQU"
 			]
 		},
 		"dcaWallet.sol": {
-			"keccak256": "0xb935db832b70cb3aec4d3970574b9a4f81f6cd9454e62bbfe5a5abe173972ae0",
+			"keccak256": "0x89e74ab1fa025a7e229e05ca9925a5ee3de9f9f674ca8cee91b46c7303258388",
 			"license": "UNLICENSED",
 			"urls": [
-				"bzz-raw://13c7b35bb921f94acf18f9152e87619192831ced7a4f3c4e5147242e9a13b393",
-				"dweb:/ipfs/QmVGdudKGd3rcFTgBsxg8NqhJ1nRdqAGWZaxufkfZmDU6P"
+				"bzz-raw://6a557f0b66e2b58cc9af72ab70922a2edb8b80e7c68651ae760cf5fa79d79a53",
+				"dweb:/ipfs/QmZTsDNC7X5CyZWjhhzic3en7FLApj9EFJvoKTbULZeZaE"
 			]
 		},
 		"interfaces/Gelato/AutomateReady.sol": {

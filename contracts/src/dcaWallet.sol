@@ -47,7 +47,7 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
     uint public totalAmountTradedIn;
     uint public totalAmountTradedOut;
 
-    event dcaTask1Executed(uint caller, uint timestamp);
+    event dcaTask1Executed(address caller, uint timestamp);
     event dcaSwapExecuted(
         uint amountIn,
         uint amountOut,

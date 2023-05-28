@@ -81,7 +81,7 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         bytes32 task2Id
     );
     event dcaOrderCancelled(uint dcafOrderId);
-    event dcaTask2Executed(uint dcafOrderId, uint timeStamp, uint caller);
+    event dcaTask2Executed(uint dcafOrderId, uint timeStamp, address caller);
 
     constructor(
         address payable _automate,
