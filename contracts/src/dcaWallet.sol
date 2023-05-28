@@ -14,6 +14,7 @@ import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 
 import "./dCaf.sol";
+
 // Tasks
 // Receiving stream
 // Track a user's portfolio
@@ -46,6 +47,15 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
     uint public totalAmountTradedIn;
     uint public totalAmountTradedOut;
 
+    event dcaTask1Executed(uint caller, uint timestamp);
+    event dcaSwapExecuted(
+        uint amountIn,
+        uint amountOut,
+        uint timestamp,
+        address tokenIn,
+        address tokenOut
+    );
+
     constructor(
         address payable _automate,
         address _fundsOwner,
@@ -73,11 +83,10 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
         // DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
         require(dcafOrder.activeStatus, "Not Active");
         require(
-            block.timestamp >
-                dcafOrder.lastTradeTimeStamp + dcafOrder.dcafFreq,
+            block.timestamp > dcafOrder.lastTradeTimeStamp + dcafOrder.dcafFreq,
             "Freq time not passed"
         );
-
+        emit dcaTask1Executed(msg.sender, block.timestamp);
         // exectue beforeSwap
         beforeSwap();
     }
@@ -106,6 +115,14 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
         dcafOrder.lastTradeTimeStamp = block.timestamp;
         totalAmountTradedIn += amountIn;
         totalAmountTradedOut += amountOut;
+
+        emit dcaSwapExecuted(
+            amountIn,
+            amountOut,
+            block.timestamp,
+            dcafOrder.tokenIn,
+            dcafOrder.tokenOut
+        );
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -166,7 +183,10 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
         // moduleData.modules[2] = Module.SINGLE_EXEC;
 
         // we can pass any arg we want in the encodeCall
-        moduleData.args[0] = _timeModuleArg(block.timestamp, frequency);
+        moduleData.args[0] = _timeModuleArg(
+            block.timestamp + frequency,
+            frequency
+        );
         moduleData.args[1] = _proxyModuleArg();
         // moduleData.args[2] = _singleExecModuleArg();
 
@@ -198,13 +218,19 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
         moduleData.modules[2] = Module.SINGLE_EXEC;
 
         // we can pass any arg we want in the encodeCall
-        moduleData.args[0] = _timeModuleArg(block.timestamp, timePeriod);
+        moduleData.args[0] = _timeModuleArg(
+            block.timestamp + timePeriod,
+            timePeriod
+        );
         moduleData.args[1] = _proxyModuleArg();
         moduleData.args[2] = _singleExecModuleArg();
 
         taskId = _createTask(
             dcafManager,
-            abi.encode(dCafProtocol.executeGelatoTask2.selector, (_dcafOrderId)),
+            abi.encode(
+                dCafProtocol.executeGelatoTask2.selector,
+                (_dcafOrderId)
+            ),
             moduleData,
             address(0)
         );

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "../interfaces/Gelato/AutomateTaskCreator.sol";
+import "./interfaces/Gelato/AutomateTaskCreator.sol";
 import "./dcaWallet.sol";
 import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 // import {CFAv1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/CFAv1Library.sol";
@@ -16,7 +16,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 // SUPERFLUID
 // - Wrap ERC20 tokens -- user has erc20 tokens
 // - Unwrap ERC20 tokens -- user has super tokenAddress
-// - Create Stream by Operator
+// - Create Stream by Operatoraq
 // - Update Stream by Operator
 // - Delete Stream by Operator
 // - updateOperator permissions
@@ -72,6 +72,17 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
     uint public totaldcafOrders;
     mapping(uint => DCAfOrder) public dcafOrders;
 
+    event dcaOrderCreated(
+        uint dcafOrderId,
+        address dcaWallet,
+        address creator,
+        address superToken,
+        bytes32 task1Id,
+        bytes32 task2Id
+    );
+    event dcaOrderCancelled(uint dcafOrderId);
+    event dcaTask2Executed(uint dcafOrderId, uint timeStamp, uint caller);
+
     constructor(
         address payable _automate,
         address _fundsOwner,
@@ -84,6 +95,14 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
     modifier onlyCreator(uint dcafOrderId) {
         address creator = dcafOrders[dcafOrderId].creator;
         require(msg.sender == creator, "NOT AUTHORISED");
+        _;
+    }
+
+    modifier validId(uint dcafOrderId) {
+        require(
+            dcafOrderId != 0 && dcafOrderId <= totaldcafOrders,
+            "NOT A VALID ORDER ID"
+        );
         _;
     }
 
@@ -135,11 +154,16 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         _order.wallet = address(_wallet);
 
         // deposit some fees
-        require(msg.value>0,"SEND FEES FOR GELATO");
+        require(msg.value > 0, "SEND FEES FOR GELATO");
         _wallet.depositGelatoFees{value: msg.value}();
 
         //createStream to the wallet
-        createStreamToContract(superToken, msg.sender, address(_wallet), flowRate);
+        createStreamToContract(
+            superToken,
+            msg.sender,
+            address(_wallet),
+            flowRate
+        );
 
         // deposit fees for Gelato in wallet
 
@@ -150,6 +174,15 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         bytes32 task2Id = _wallet.createTask2(dcafOrderID, timePeriod);
         _order.task2Id = task2Id;
         dcafOrders[dcafOrderID] = _order;
+
+        emit dcaOrderCreated(
+            dcafOrderID,
+            address(_wallet),
+            msg.sender,
+            superToken,
+            task1Id,
+            task2Id
+        );
     }
 
     // What can be updated ??
@@ -171,15 +204,21 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         dcaWallet(_dcafOrder.wallet).cancelTask(_dcafOrder.task2Id);
 
         // cancel the stream incoming
-        deleteFlowToContract(_dcafOrder.superToken, _dcafOrder.creator , _dcafOrder.wallet);
+        deleteFlowToContract(
+            _dcafOrder.superToken,
+            _dcafOrder.creator,
+            _dcafOrder.wallet
+        );
 
         // refund the extra tokens lying
         dcaWallet(_dcafOrder.wallet).refundSuperToken(_dcafOrder.superToken);
+
+        emit dcaOrderCancelled(dcafOrderId);
     }
 
     // only refunds in case the task was cancelled
     function refundDCA(uint dcafOrderId) external onlyCreator(dcafOrderId) {
-         DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
+        DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
         dcaWallet(_dcafOrder.wallet).refundSuperToken(_dcafOrder.superToken);
     }
 
@@ -188,7 +227,7 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
     //////////////////////////////////////////////////////////////*/
 
     // Add restrictions
-    function executeGelatoTask2(uint dcafOrderId) public {
+    function executeGelatoTask2(uint dcafOrderId) public validId(dcafOrderId) {
         DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
         require(_dcafOrder.activeStatus, "Already Cancelled");
         require(
@@ -203,6 +242,8 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
             _dcafOrder.creator,
             _dcafOrder.superToken
         );
+
+        emit dcaTask2Executed(dcafOrderId, block.timestamp, msg.sender);
     }
 
     function cancelDCATask(
@@ -215,7 +256,7 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         dcaWallet(_wallet).cancelTask(task1Id);
 
         // cancel the stream incoming
-        deleteFlowToContract(superToken, creator,_wallet);
+        deleteFlowToContract(superToken, creator, _wallet);
 
         // // refund the extra tokens lying
         // dcaWallet(_wallet).refundSuperToken(superToken);

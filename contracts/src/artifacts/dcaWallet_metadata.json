@@ -742,14 +742,6 @@
 				"dweb:/ipfs/QmVDZfJJ89UUCE1hMyzqpkZAtQ8jUsBgZNE5AMRG7RzRFS"
 			]
 		},
-		"@uniswap/v3-periphery/contracts/interfaces/IQuoterV2.sol": {
-			"keccak256": "0x7e931f0cd34811851031c4f1318f59b4a4b427a2d2e2968b8e5ed87a9f7f89d6",
-			"license": "GPL-2.0-or-later",
-			"urls": [
-				"bzz-raw://63a8d7dcdd081004356b39e1b8e19ee56b02b3abd3e4165781bde1a100a35bed",
-				"dweb:/ipfs/QmdfpYkMxoaeEd646aSioLZcPodnCnpZy9Ny4j98uAba2J"
-			]
-		},
 		"@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol": {
 			"keccak256": "0x9bfaf1feb32814623e627ab70f2409760b15d95f1f9b058e2b3399a8bb732975",
 			"license": "GPL-2.0-or-later",
@@ -767,19 +759,19 @@
 			]
 		},
 		"dCaf.sol": {
-			"keccak256": "0xdc71365be0f37648bb9b4fbe2a6f6a07db3bf62aa2b7ba380edc68f9e2f25f9d",
+			"keccak256": "0xb6d8d1e43364a3aab9c841af16a7c6b5991197600e255bd6b93982d0d1c41092",
 			"license": "UNLICENSED",
 			"urls": [
-				"bzz-raw://d6d04df11ac379f16c46e0080086b7c61f836a2ae86c9dd8de67b13b1cbff06f",
-				"dweb:/ipfs/QmX8b6j3vQdFQ3KKjbJdMeSH3ZPtL5dVotarvyo8bEUvv3"
+				"bzz-raw://f291332f0372519b4b4bddec520bba0e769c2d730cd29496185ce72c51aaba9a",
+				"dweb:/ipfs/QmWXJcDgK65YjaptAfbiig2GhXmpRBTYfsVGEwPiwXSicv"
 			]
 		},
 		"dcaWallet.sol": {
-			"keccak256": "0x53cfad2df9f1ed0d96d858b60d0539447f4ae329e57b7f92fc20f54a9a47d107",
+			"keccak256": "0xb935db832b70cb3aec4d3970574b9a4f81f6cd9454e62bbfe5a5abe173972ae0",
 			"license": "UNLICENSED",
 			"urls": [
-				"bzz-raw://1337b7f3d6b02191a5c893ccde1cfebcb0fe7ea43e3427abeb2546be7c6463d2",
-				"dweb:/ipfs/Qmay7ViXGib16f1eHB7XhxLo2QaAqED5dymBVcp3Degxwe"
+				"bzz-raw://13c7b35bb921f94acf18f9152e87619192831ced7a4f3c4e5147242e9a13b393",
+				"dweb:/ipfs/QmVGdudKGd3rcFTgBsxg8NqhJ1nRdqAGWZaxufkfZmDU6P"
 			]
 		},
 		"interfaces/Gelato/AutomateReady.sol": {

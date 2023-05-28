@@ -718,19 +718,19 @@
 			]
 		},
 		"dCaf.sol": {
-			"keccak256": "0x8ce1581c0672a4e621b69f0c4ae5fb04244bde79d20572a74d10d937af2655b5",
+			"keccak256": "0xc4202aeaf2ef68398d8c4298b9920a0a16e663a405336fe877e5822a1130a15e",
 			"license": "UNLICENSED",
 			"urls": [
-				"bzz-raw://c6d37b1caa8f567c89c379b546327c34cafae5b2a5538482b3f789ffb4c171cb",
-				"dweb:/ipfs/QmcbSBZRWtuVFEiTFpcayGmnsspKD8XdJPXUUq8eVwtGRv"
+				"bzz-raw://2d496cfed3090214d003971ebbae9ad5aee71940d0bf11186113e78cd2b0a054",
+				"dweb:/ipfs/QmSkwL8okCkbr6UqPWX6RdAXJRMo1QfKxAQwuXxiZZSFwf"
 			]
 		},
 		"dcaWallet.sol": {
-			"keccak256": "0x53cfad2df9f1ed0d96d858b60d0539447f4ae329e57b7f92fc20f54a9a47d107",
+			"keccak256": "0xb935db832b70cb3aec4d3970574b9a4f81f6cd9454e62bbfe5a5abe173972ae0",
 			"license": "UNLICENSED",
 			"urls": [
-				"bzz-raw://1337b7f3d6b02191a5c893ccde1cfebcb0fe7ea43e3427abeb2546be7c6463d2",
-				"dweb:/ipfs/Qmay7ViXGib16f1eHB7XhxLo2QaAqED5dymBVcp3Degxwe"
+				"bzz-raw://13c7b35bb921f94acf18f9152e87619192831ced7a4f3c4e5147242e9a13b393",
+				"dweb:/ipfs/QmVGdudKGd3rcFTgBsxg8NqhJ1nRdqAGWZaxufkfZmDU6P"
 			]
 		},
 		"interfaces/Gelato/AutomateReady.sol": {
