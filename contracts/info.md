@@ -3,3 +3,4 @@ https://app.gelato.network/task/0xae12df4f8282f2305e32dbeb395a305c7e82923890cfa5
 https://mumbai.polygonscan.com/tx/0x51aa165defc21a85e79421c9e307a4e20f3f4c408a9c456fcd5dc8836c0d43a5#eventlog
 https://mumbai.polygonscan.com/tx/0xfd96aba3e3897c1c1b6cfe7839b83ba6c3a22afaacd47df85ddcbe9c095b63c0
 https://dashboard.tenderly.co/tx/mumbai/0xfd96aba3e3897c1c1b6cfe7839b83ba6c3a22afaacd47df85ddcbe9c095b63c0?trace=0.6.0
+https://superfluidhq.notion.site/Setting-Up-Superfluid-Auto-Wrap-9a565d53bbee4bdc953cc2a656c43761
