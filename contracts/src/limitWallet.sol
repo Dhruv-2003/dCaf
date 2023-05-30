@@ -13,14 +13,14 @@ import {ISuperfluid, ISuperToken, ISuperApp} from "@superfluid-finance/ethereum-
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 
-import "./dCaf.sol";
+import "./limitCaf.sol";
 
 // Tasks
 // Receiving stream
 // Track a user's portfolio
 // unwrap and Swap
 // pay for Gelato's task - so all the task will be created from this
-contract dcaWallet is Ownable, AutomateTaskCreator {
+contract limitWallet is Ownable, AutomateTaskCreator {
     using SuperTokenV1Library for ISuperToken;
     ISwapRouter public immutable swapRouter;
     uint24 public constant poolFee = 3000;
@@ -82,10 +82,10 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
     function executeGelatoTask1() public {
         // DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
         require(dcafOrder.activeStatus, "Not Active");
-        require(
-            block.timestamp > dcafOrder.lastTradeTimeStamp + dcafOrder.dcafFreq,
-            "Freq time not passed"
-        );
+        // require(
+        //     block.timestamp > dcafOrder.lastTradeTimeStamp + dcafOrder.dcafFreq,
+        //     "Freq time not passed"
+        // );
         emit dcaTask1Executed(msg.sender, block.timestamp);
         // exectue beforeSwap
         beforeSwap();
