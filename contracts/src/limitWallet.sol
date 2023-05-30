@@ -12,6 +12,7 @@ import {ISuperfluid, ISuperToken, ISuperApp} from "@superfluid-finance/ethereum-
 
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/IQuoterV2.sol";
 
 import "./limitCaf.sol";
 
@@ -23,6 +24,7 @@ import "./limitCaf.sol";
 contract limitWallet is Ownable, AutomateTaskCreator {
     using SuperTokenV1Library for ISuperToken;
     ISwapRouter public immutable swapRouter;
+    IQuoterV2 public immutable quoter;
     uint24 public constant poolFee = 3000;
     uint160 sqrtPriceLimitX96 = 0;
 
@@ -43,9 +45,10 @@ contract limitWallet is Ownable, AutomateTaskCreator {
     //     bytes32 task1Id;
     //     bytes32 task2Id;
     // }
-    dCafProtocol.DCAfOrder public dcafOrder;
+    limitCaf.DCAfOrder public dcafOrder;
     uint public totalAmountTradedIn;
     uint public totalAmountTradedOut;
+    string web3FunctionHash;
 
     event dcaTask1Executed(address caller, uint timestamp);
     event dcaSwapExecuted(
@@ -60,11 +63,15 @@ contract limitWallet is Ownable, AutomateTaskCreator {
         address payable _automate,
         address _fundsOwner,
         address _swapRouter,
+        address _quoter,
+        string memory _web3IPFSHash,
         address _manager,
         uint _dcafOrderId,
         dCafProtocol.DCAfOrder memory _order
     ) AutomateTaskCreator(_automate, _fundsOwner) {
         swapRouter = ISwapRouter(_swapRouter);
+        quoter = IQouterV2(_quoter);
+        web3FunctionHash = _web3IPFSHash;
         dcafManager = _manager;
         dcafOrderId = _dcafOrderId;
         dcafOrder = _order;
@@ -89,6 +96,25 @@ contract limitWallet is Ownable, AutomateTaskCreator {
         emit dcaTask1Executed(msg.sender, block.timestamp);
         // exectue beforeSwap
         beforeSwap();
+    }
+
+    function checker() public {
+        uint amountPrice = (1 ether) / 10;
+
+        /// fetching the price for 1
+        (uint256 amountOut, , , ) = _quoteSwapSingle(
+            dcafOrder.tokenIn,
+            dcafOrder.tokenOut,
+            amountPrice
+        );
+        uint limitPrice = dcafOrder.limitPrice;
+        // price in wei only against 1 ETHER unit of tokenIn
+        canExec = ((amountOut * 10) == limitPrice) ? true : false;
+        if (canExec) {
+            execPayload = abi.encodeCall(this.executeGelatoTask, (orderId));
+        } else {
+            execPayload = abi.encode("Price Not matched");
+        }
     }
 
     function beforeSwap() internal {
@@ -171,28 +197,37 @@ contract limitWallet is Ownable, AutomateTaskCreator {
     }
 
     function createTask1(
-        uint frequency
+        bytes calldata _web3FunctionArgsHex
     ) external onlyManager returns (bytes32 taskId) {
         ModuleData memory moduleData = ModuleData({
             modules: new Module[](2),
             args: new bytes[](2)
         });
 
-        moduleData.modules[0] = Module.TIME;
+        // moduleData.modules[0] = Module.TIME;
+        moduleData.modules[0] = Module.RESOLVER;
         moduleData.modules[1] = Module.PROXY;
         // moduleData.modules[2] = Module.SINGLE_EXEC;
-
+        // moduleData.modules[1] = Module.WEB3_FUNCTION;
         // we can pass any arg we want in the encodeCall
-        moduleData.args[0] = _timeModuleArg(
-            block.timestamp + frequency,
-            frequency
+        // moduleData.args[0] = _timeModuleArg(
+        //     block.timestamp + frequency,
+        //     frequency
+        // );
+        moduleData.args[0] = _resolverModuleArg(
+            address(this),
+            abi.encodeCall(this.checker, ())
         );
-        moduleData.args[1] = _proxyModuleArg();
+        moduleData.args[0] = _proxyModuleArg();
         // moduleData.args[2] = _singleExecModuleArg();
+        // moduleData.args[1] = _web3FunctionModuleArg(
+        //     web3FunctionHash,
+        //     _web3FunctionArgsHex
+        // );
 
         taskId = _createTask(
             address(this),
-            abi.encodeCall(this.executeGelatoTask1, ()),
+            abi.encodeWithSelector(this.executeGelatoTask1, ()),
             moduleData,
             address(0)
         );
@@ -276,5 +311,55 @@ contract limitWallet is Ownable, AutomateTaskCreator {
 
         // then afterSwap() has to be called
         afterSwap(amountIn, amountOut);
+    }
+
+    function _quoteSwapMulti(
+        bytes memory path,
+        uint256 amountIn
+    )
+        internal
+        returns (
+            uint256 amountOut,
+            uint160[] memory sqrtPriceX96AfterList,
+            uint32[] memory initializedTicksCrossedList,
+            uint256 gasEstimate
+        )
+    {
+        (
+            amountOut,
+            sqrtPriceX96AfterList,
+            initializedTicksCrossedList,
+            gasEstimate
+        ) = quoter.quoteExactInput(path, amountIn);
+    }
+
+    function _quoteSwapSingle(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn
+    )
+        internal
+        returns (
+            uint256 amountOut,
+            uint160 sqrtPriceX96After,
+            uint32 initializedTicksCrossed,
+            uint256 gasEstimate
+        )
+    {
+        IQuoterV2.QuoteExactInputSingleParams memory params = IQuoterV2
+            .QuoteExactInputSingleParams({
+                tokenIn: tokenIn,
+                tokenOut: tokenOut,
+                amountIn: amountIn,
+                fee: poolFee,
+                sqrtPriceLimitX96: sqrtPriceLimitX96
+            });
+
+        (
+            amountOut,
+            sqrtPriceX96After,
+            initializedTicksCrossed,
+            gasEstimate
+        ) = quoter.quoteExactInputSingle(params);
     }
 }
