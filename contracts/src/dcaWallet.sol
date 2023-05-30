@@ -192,7 +192,7 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
 
         taskId = _createTask(
             address(this),
-            abi.encode(this.executeGelatoTask1),
+            abi.encodeCall(this.executeGelatoTask1,()),
             moduleData,
             address(0)
         );
@@ -227,8 +227,8 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
 
         taskId = _createTask(
             dcafManager,
-            abi.encode(
-                dCafProtocol.executeGelatoTask2.selector,
+            abi.encodeCall(
+                dCafProtocol.executeGelatoTask2,
                 (_dcafOrderId)
             ),
             moduleData,

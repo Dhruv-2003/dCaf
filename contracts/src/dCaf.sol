@@ -212,7 +212,7 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
 
         // refund the extra tokens lying
         dcaWallet(_dcafOrder.wallet).refundSuperToken(_dcafOrder.superToken);
-
+        dcafOrders[dcafOrderId] = _dcafOrder;
         emit dcaOrderCancelled(dcafOrderId);
     }
 
@@ -242,7 +242,7 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
             _dcafOrder.creator,
             _dcafOrder.superToken
         );
-
+        dcafOrders[dcafOrderId] = _dcafOrder;
         emit dcaTask2Executed(dcafOrderId, block.timestamp, msg.sender);
     }
 

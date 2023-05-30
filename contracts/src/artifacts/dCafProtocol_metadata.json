@@ -807,11 +807,11 @@
 			]
 		},
 		"dcaWallet.sol": {
-			"keccak256": "0x89e74ab1fa025a7e229e05ca9925a5ee3de9f9f674ca8cee91b46c7303258388",
+			"keccak256": "0x74f1d7b9f7df217403d168e47e718e5938e0ebd779777880c692e8a4877b11e6",
 			"license": "UNLICENSED",
 			"urls": [
-				"bzz-raw://6a557f0b66e2b58cc9af72ab70922a2edb8b80e7c68651ae760cf5fa79d79a53",
-				"dweb:/ipfs/QmZTsDNC7X5CyZWjhhzic3en7FLApj9EFJvoKTbULZeZaE"
+				"bzz-raw://8c7b268269d7567c247dbf89dc7be5544c7749332fb86cc543e477a6d3e230e3",
+				"dweb:/ipfs/Qmawp1Ug6Y39KUToYjZiKUGo3hvcT2GFwuNpHskARSJMTf"
 			]
 		},
 		"interfaces/Gelato/AutomateReady.sol": {
