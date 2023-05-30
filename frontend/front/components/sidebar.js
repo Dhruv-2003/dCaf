@@ -11,7 +11,7 @@ const Sidebar = ({children}) => {
       <div className="flex flex-col border-r border-slate-500 w-1/6 h-screen">
         <div className="mt-10">
           <div>
-            <p className="text-5xl px-10">dCaf</p>
+            <p className="text-5xl px-10"><span className="text-green-500">d</span>Caf</p>
           </div>
           <div className="mt-10 text-xl flex flex-col">
             <ul>
