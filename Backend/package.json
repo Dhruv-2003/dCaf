@@ -1,0 +1,18 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Dhruv-2003",
+  "license": "ISC",
+  "dependencies": {
+    "@superfluid-finance/sdk-core": "^0.6.6",
+    "dotenv": "^16.0.3",
+    "ethers": "^5.7.2"
+  }
+}
