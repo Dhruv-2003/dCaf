@@ -12,13 +12,14 @@ import {
   Table,
   Thead,
   Tbody,
-  Tfoot,
   Tr,
   Th,
   Td,
-  TableCaption,
   TableContainer,
 } from "@chakra-ui/react";
+import Image from "next/image";
+import s2 from "../public/superfluid2.png"
+import s1 from "../public/superfluid1.png"
 
 const Dashboard = () => {
   const { isConnected } = useAccount();
@@ -83,8 +84,8 @@ const Dashboard = () => {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col justify-center items-center m-auto h-screen">
-          <div className="mb-60">
+        <div className="flex flex-col justify-center items-center mx-auto">
+          <div className="mt-32">
             <div className="w-full flex flex-col justify-center items-center mx-auto">
               <p className="text-3xl">Connect to dCaf</p>
               <p className="text-xl text-gray-400 mt-1">
@@ -92,11 +93,13 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="flex mt-10">
-              <div className="px-10 py-3 border border-zinc-300 mx-2 rounded-xl shadow-xl hover:shadow-2xl">
-                <p>Dollar cost Average Investing</p>
+              <div className="py-3 border border-zinc-300 mx-2 rounded-xl shadow-xl hover:shadow-2xl flex flex-col">
+                <p className="px-10 text-2xl">Dollar cost Average Investing</p>
+                <Image src={s2} alt="image" className="w-[400px] object-fill mt-4"/>
               </div>
-              <div className="px-10 py-3 border border-zinc-300 mx-2 rounded-xl shadow-xl hover:shadow-2xl">
-                <p>Limit cost Average Investing</p>
+              <div className="py-3 border border-zinc-300 mx-2 rounded-xl shadow-xl hover:shadow-2xl flex flex-col">
+                <p className="px-10 text-2xl">Limit cost Average Investing</p>
+                <Image src={s1} alt="image" className="w-[400px] object-fill mt-4"/>
               </div>
             </div>
           </div>
