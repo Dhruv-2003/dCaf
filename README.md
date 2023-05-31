@@ -2,6 +2,9 @@
 Automated Asset Investing Protocol with Dollar Cost Averaging strategy
 
 DevFolio link -  https://devfolio.co/projects/dcaf-4e51
+
+Video link - https://youtu.be/D7kVdK--qY0
+
 Created for the Superfolio May Wavepool 
 
 ## Introduction
