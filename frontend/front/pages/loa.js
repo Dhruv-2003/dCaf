@@ -33,32 +33,7 @@ const Loa = () => {
                   </div>
                   <div className="flex flex-col mt-6">
                     <p className="text-2xl">Time Period</p>
-                    <div className="flex align-middle items-center mt-2">
-                      <input
-                        type="number"
-                        placeholder="0"
-                        className="w-8 px-2 text-xl"
-                      ></input>
-                      <p className="mx-2 text-xl">days</p>
-                      <input
-                        type="number"
-                        placeholder="0"
-                        className="w-8 px-2 text-xl"
-                      ></input>
-                      <p className="mx-2 text-xl">hours</p>
-                      <input
-                        type="number"
-                        placeholder="0"
-                        className="w-8 px-2 text-xl"
-                      ></input>
-                      <p className="mx-2 text-xl">minutes</p>
-                      <input
-                        type="number"
-                        placeholder="0"
-                        className="w-8 px-2 text-xl"
-                      ></input>
-                      <p className="mx-2 text-xl">seconds</p>
-                    </div>
+                    <input className="mt-3 text-xl" type="datetime-local"></input>
                   </div>
                   <div className="flex flex-col mt-6">
                   <p className="text-2xl">Limit Price</p>

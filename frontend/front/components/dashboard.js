@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useAccount } from "wagmi";
 import {
   Accordion,
@@ -7,6 +7,7 @@ import {
   AccordionPanel,
   AccordionIcon,
   Box,
+  Select,
 } from "@chakra-ui/react";
 import {
   Table,
@@ -18,8 +19,8 @@ import {
   TableContainer,
 } from "@chakra-ui/react";
 import Image from "next/image";
-import s2 from "../public/superfluid2.png"
-import s1 from "../public/superfluid1.png"
+import s2 from "../public/superfluid2.png";
+import s1 from "../public/superfluid1.png";
 
 const Dashboard = () => {
   const { isConnected } = useAccount();
@@ -31,13 +32,13 @@ const Dashboard = () => {
           <div className="mt-20">
             <div className="w-full flex flex-col justify-center items-center mx-auto">
               <div className="flex justify-start">
-                <p className="text-3xl text-green-500 ">Current Streams</p>
+                <p className="text-3xl text-green-500"></p>
               </div>
               <div className="mt-8 w-3/4 justify-center flex items-center mx-auto">
                 <div className="border border-gray-200 px-4 py-3 rounded-xl shadow-xl">
                   <div>
                     <Accordion
-                      defaultIndex={[0]}
+                      defaultIndex={[1]}
                       allowMultiple={true}
                       className=""
                     >
@@ -70,10 +71,14 @@ const Dashboard = () => {
                           </AccordionButton>
                         </h2>
                         <AccordionPanel pb={4}>
-                         <div className="mx-10 flex justify-between">
-                            <button className="bg-green-200 px-7 py-1 rounded-md text-green-600">edit</button>
-                            <button className="bg-red-200 px-7 py-1 rounded-md text-red-600">cancel</button>
-                         </div>
+                          <div className="mx-10 flex justify-between">
+                            <button className="bg-green-200 px-7 py-1 rounded-md text-green-600">
+                              edit
+                            </button>
+                            <button className="bg-red-200 px-7 py-1 rounded-md text-red-600">
+                              cancel
+                            </button>
+                          </div>
                         </AccordionPanel>
                       </AccordionItem>
                     </Accordion>
@@ -95,11 +100,19 @@ const Dashboard = () => {
             <div className="flex mt-10">
               <div className="py-3 border border-zinc-300 mx-2 rounded-xl shadow-xl hover:shadow-2xl flex flex-col">
                 <p className="px-10 text-2xl">Dollar cost Average Investing</p>
-                <Image src={s2} alt="image" className="w-[400px] object-fill mt-4"/>
+                <Image
+                  src={s2}
+                  alt="image"
+                  className="w-[400px] object-fill mt-4"
+                />
               </div>
               <div className="py-3 border border-zinc-300 mx-2 rounded-xl shadow-xl hover:shadow-2xl flex flex-col">
                 <p className="px-10 text-2xl">Limit cost Average Investing</p>
-                <Image src={s1} alt="image" className="w-[400px] object-fill mt-4"/>
+                <Image
+                  src={s1}
+                  alt="image"
+                  className="w-[400px] object-fill mt-4"
+                />
               </div>
             </div>
           </div>
