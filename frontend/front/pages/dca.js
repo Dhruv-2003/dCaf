@@ -10,6 +10,7 @@ import {
   Th,
   Td,
   TableContainer,
+  Box,
 } from "@chakra-ui/react";
 import Image from "next/image";
 import {
@@ -29,8 +30,9 @@ import {
 import { useAccount, useWalletClient, usePublicClient } from "wagmi";
 import { getContract } from "wagmi/actions";
 import { Framework, SuperToken } from "@superfluid-finance/sdk-core";
-import { Spinner } from '@chakra-ui/react'
-import { useToast } from '@chakra-ui/react'
+import { Spinner } from "@chakra-ui/react";
+import { useToast } from "@chakra-ui/react";
+import { parseEther } from "viem";
 
 const Dca = () => {
   const [flowRateUnit, setFlowRateUnit] = useState();
@@ -42,6 +44,7 @@ const Dca = () => {
   const [selectOut, setSelectOut] = useState("Select a Token");
   const [selectOutLogo, setSelectOutLogo] = useState("");
   const [dropOut, setDropOut] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [frequency, setFrequency] = useState({
     day: 0,
     hr: 0,
@@ -49,7 +52,7 @@ const Dca = () => {
     sec: 0,
   });
   const [approved, setApproved] = useState(false);
-  const toast = useToast()
+  const toast = useToast();
   const [superTokenAdd, setSuperTokenAdd] = useState();
   const [tokenOut, setTokenOut] = useState();
   const [tokenIn, setTokenIn] = useState();
@@ -135,12 +138,28 @@ const Dca = () => {
     return totalTime;
   };
 
+  const sendNotify = (message, txId) => {
+    toast({
+      position: "bottom",
+      duration: 4000,
+      render: () => (
+        <Box color="white" p={3} bg="blue.500">
+          <a target="_blank" href={`https://mumbai.polygonscan.com/tx/${txId}`}>
+            {message}
+          </a>
+        </Box>
+      ),
+    });
+  };
+
   const approveOperator = async () => {
     try {
       if (!flowRate) {
         console.log("Enter Flow rate to be allowed");
         return;
       }
+
+      setIsLoading(true);
       const { request } = await publicClient.simulateContract({
         address: CFAV1Forwarder_Address,
         abi: cfav1forwarder_ABI,
@@ -151,12 +170,19 @@ const Dca = () => {
       console.log("Upgrading the asset");
       const tx = await walletClient.writeContract(request);
       console.log(tx);
+      sendNotify("Operator Approval sent for confirmation ...", tx);
       const transaction = await publicClient.waitForTransactionReceipt({
         hash: tx,
       });
       console.log(transaction);
+      sendNotify(
+        "Approval Commpleted Successfully, Now you can create stream",
+        tx
+      );
       setApproved(true);
+      setIsLoading(false);
     } catch (error) {
+      setIsLoading(false);
       console.log(error);
       window.alert(error);
     }
@@ -171,6 +197,7 @@ const Dca = () => {
         window.alert("Check inputs");
         return;
       }
+      setIsLoading(true);
       console.log(superTokenAdd, tokenOut, flowRate, totalTime, dcaFreq);
       const { request } = await publicClient.simulateContract({
         ...dcaf_contract,
@@ -180,14 +207,18 @@ const Dca = () => {
         value: parseEther(gelatoFees),
       });
       const tx = await walletClient.writeContract(request);
+      sendNotify("createDCAOrder sent for confirmation ..", tx);
       console.log(tx);
       const transaction = await publicClient.waitForTransactionReceipt({
         hash: tx,
       });
       console.log(transaction);
+      setIsLoading(false);
+      sendNotify("Order Created Successfully", tx);
     } catch (error) {
       console.log(error);
       window.alert(error);
+      setIsLoading(false);
     }
   };
 
@@ -299,27 +330,34 @@ const Dca = () => {
                         className="focus:border-green-500 px-2 py-2 w-full text-2xl border-slate-300 mt-3"
                       ></input>
                     </div>
+
                     <div className="flex justify-between mt-10">
-                      <button
-                        onClick={() => approveOperator()}
-                        className={`bg-blue-400 text-white px-10 py-3 rounded-xl text-lg ${
-                          approved
-                            ? `cursor-not-allowed`
-                            : `cursor-pointer hover:bg-white hover:text-blue-500 hover:border hover:border-blue-500 duration-200`
-                        }`}
-                      >
-                        Approve Stream
-                      </button>
-                      <button
-                        onClick={() => createDCAOrder()}
-                        className={`bg-green-500 text-white px-10 py-3 rounded-xl text-lg  ${
-                          approved
-                            ? `hover:bg-white hover:text-green-500 hover:border hover:border-green-500 duration-200 cursor-pointer`
-                            : `cursor-not-allowed`
-                        }`}
-                      >
-                        Start stream
-                      </button>
+                      {isLoading ? (
+                        <Spinner></Spinner>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => approveOperator()}
+                            className={`bg-blue-400 text-white px-10 py-3 rounded-xl text-lg ${
+                              approved
+                                ? `cursor-not-allowed`
+                                : `cursor-pointer hover:bg-white hover:text-blue-500 hover:border hover:border-blue-500 duration-200`
+                            }`}
+                          >
+                            Approve Stream
+                          </button>
+                          <button
+                            onClick={() => createDCAOrder()}
+                            className={`bg-green-500 text-white px-10 py-3 rounded-xl text-lg  ${
+                              approved
+                                ? `hover:bg-white hover:text-green-500 hover:border hover:border-green-500 duration-200 cursor-pointer`
+                                : `cursor-not-allowed`
+                            }`}
+                          >
+                            Start stream
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
