@@ -333,7 +333,9 @@ const Dca = () => {
 
                     <div className="flex justify-between mt-10">
                       {isLoading ? (
-                        <Spinner></Spinner>
+                        <div className="flex justify-center items-center">
+                        <Spinner size={"lg"}></Spinner>
+                        </div>
                       ) : (
                         <>
                           <button
