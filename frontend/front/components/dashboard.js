@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import { useAccount } from "wagmi";
+import React, { useEffect, useState } from "react";
 import {
   Accordion,
   AccordionItem,
@@ -21,9 +20,119 @@ import {
 import Image from "next/image";
 import s2 from "../public/superfluid2.png";
 import s1 from "../public/superfluid1.png";
-
+import { useAccount, useWalletClient, usePublicClient } from "wagmi";
+import { getContract } from "wagmi/actions";
+import {
+  cfav1forwarder_ABI,
+  dcafProtocol_ABI,
+  dcafWallet_ABI,
+  wmatic_ABI,
+  wmaticx_ABI,
+} from "../constants/abi";
+import {
+  CFAV1Forwarder_Address,
+  WETH_Address,
+  WMATIC_Address,
+  WMATICx_Address,
+  dcafProtocol_Address,
+} from "../constants/contracts";
+import { formatEther } from "viem";
 const Dashboard = () => {
-  const { isConnected } = useAccount();
+  // const { isConnected } = useAccount();
+  const { address, isConnected } = useAccount();
+  const publicClient = usePublicClient();
+  const { data: walletClient } = useWalletClient();
+  const [dcafOrderId, setDcafOrderId] = useState(1);
+  const [dcaOrderData, setDcaOrderData] = useState();
+  const [dcaOrderActive, setDcaOrderActive] = useState();
+  const [dcaWallet, setDcaWallet] = useState();
+  const dcaf_contract = {
+    address: dcafProtocol_Address,
+    abi: dcafProtocol_ABI,
+  };
+  const fetchOrderDetail = async () => {
+    try {
+      const data = await publicClient.readContract({
+        ...dcaf_contract,
+        functionName: "dcafOrders",
+        args: [dcafOrderId],
+      });
+      // console.log(data);
+      setDcaWallet(data[1]);
+      const finalData = {
+        creator: data[0],
+        wallet: data[1],
+        tokenIn: data[2],
+        superToken: data[3],
+        tokenOut: data[4],
+        flowRate: formatEther(data[5]),
+        timePeriod: handleTimePeriod(parseInt(data[6]), parseInt(data[9])),
+        dcafFreq: data[7].toString(),
+        task1Id: data[11],
+        task2Id: data[12],
+      };
+      setDcaOrderActive(data[10]);
+      // setDcaOrderData(finalData);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const cancelDCAOrder = async () => {
+    try {
+      if (!dcafOrderId) return;
+      const { request } = await publicClient.simulateContract({
+        ...dcaf_contract,
+        functionName: "createDCA",
+        args: [dcafOrderId],
+        account: address,
+      });
+      const tx = await walletClient.writeContract(request);
+      console.log(tx);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleTimePeriod = (timePeriod, creationTime) => {
+    // const currentTime = Math.floor(new Date() / 1000);
+    // console.log(currentTime);
+    const totalTime = creationTime + timePeriod;
+    const endTime = timeConverter(totalTime);
+    return endTime;
+  };
+
+  function timeConverter(UNIX_timestamp) {
+    var a = new Date(UNIX_timestamp * 1000);
+    var months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    var year = a.getFullYear();
+    var month = months[a.getMonth()];
+    var date = a.getDate();
+    var hour = a.getHours();
+    var min = a.getMinutes();
+    var sec = a.getSeconds();
+    var time =
+      date + " " + month + " " + year + " " + hour + ":" + min + ":" + sec;
+    return time;
+  }
+
+  useEffect(() => {
+    if (dcafOrderId) {
+      fetchOrderDetail();
+    }
+  }, [dcafOrderId]);
 
   return (
     <div className="w-full">
@@ -37,51 +146,59 @@ const Dashboard = () => {
               <div className="mt-8 w-3/4 justify-center flex items-center mx-auto">
                 <div className="border border-gray-200 px-4 py-3 rounded-xl shadow-xl">
                   <div>
-                    <Accordion
-                      defaultIndex={[1]}
-                      allowMultiple={true}
-                      className=""
-                    >
-                      <AccordionItem>
-                        <h2>
-                          <AccordionButton>
-                            <Box as="span" flex="1" textAlign="left">
-                              <TableContainer>
-                                <Table variant="simple">
-                                  <Thead>
-                                    <Tr>
-                                      <Th>Type</Th>
-                                      <Th>Flow rate</Th>
-                                      <Th>Frequency</Th>
-                                      <Th>Ending At</Th>
-                                    </Tr>
-                                  </Thead>
-                                  <Tbody>
-                                    <Tr>
-                                      <Td>DCA</Td>
-                                      <Td isNumeric>0.1245</Td>
-                                      <Td isNumeric>30</Td>
-                                      <Td isNumeric>25/04/2024 12:26</Td>
-                                    </Tr>
-                                  </Tbody>
-                                </Table>
-                              </TableContainer>
-                            </Box>
-                            <AccordionIcon />
-                          </AccordionButton>
-                        </h2>
-                        <AccordionPanel pb={4}>
-                          <div className="mx-10 flex justify-between">
-                            <button className="bg-green-200 px-7 py-1 rounded-md text-green-600">
-                              edit
-                            </button>
-                            <button className="bg-red-200 px-7 py-1 rounded-md text-red-600">
-                              cancel
-                            </button>
-                          </div>
-                        </AccordionPanel>
-                      </AccordionItem>
-                    </Accordion>
+                    {dcaOrderData && (
+                      <Accordion
+                        defaultIndex={[1]}
+                        allowMultiple={true}
+                        className=""
+                      >
+                        <AccordionItem>
+                          <h2>
+                            <AccordionButton>
+                              <Box as="span" flex="1" textAlign="left">
+                                <TableContainer>
+                                  <Table variant="simple">
+                                    <Thead>
+                                      <Tr>
+                                        <Th>Type</Th>
+                                        <Th>Flow rate</Th>
+                                        <Th>Frequency</Th>
+                                        <Th>Ending At</Th>
+                                      </Tr>
+                                    </Thead>
+                                    <Tbody>
+                                      <Tr>
+                                        <Td>DCA</Td>
+                                        <Td isNumeric>
+                                          {dcaOrderData.flowRate}
+                                        </Td>
+                                        <Td isNumeric>
+                                          {dcaOrderData.dcafFreq}
+                                        </Td>
+                                        <Td isNumeric>
+                                          {dcaOrderData.timePeriod}
+                                        </Td>
+                                      </Tr>
+                                    </Tbody>
+                                  </Table>
+                                </TableContainer>
+                              </Box>
+                              <AccordionIcon />
+                            </AccordionButton>
+                          </h2>
+                          <AccordionPanel pb={4}>
+                            <div className="mx-10 flex justify-between">
+                              <button className="bg-green-200 px-7 py-1 rounded-md text-green-600">
+                                edit
+                              </button>
+                              <button className="bg-red-200 px-7 py-1 rounded-md text-red-600">
+                                cancel
+                              </button>
+                            </div>
+                          </AccordionPanel>
+                        </AccordionItem>
+                      </Accordion>
+                    )}
                   </div>
                 </div>
               </div>
