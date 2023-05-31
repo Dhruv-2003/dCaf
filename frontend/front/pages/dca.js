@@ -29,6 +29,8 @@ import {
 import { useAccount, useWalletClient, usePublicClient } from "wagmi";
 import { getContract } from "wagmi/actions";
 import { Framework, SuperToken } from "@superfluid-finance/sdk-core";
+import { Spinner } from '@chakra-ui/react'
+import { useToast } from '@chakra-ui/react'
 
 const Dca = () => {
   const [flowRateUnit, setFlowRateUnit] = useState();
@@ -47,6 +49,7 @@ const Dca = () => {
     sec: 0,
   });
   const [approved, setApproved] = useState(false);
+  const toast = useToast()
   const [superTokenAdd, setSuperTokenAdd] = useState();
   const [tokenOut, setTokenOut] = useState();
   const [tokenIn, setTokenIn] = useState();
