@@ -13,12 +13,15 @@ import {
 } from "@chakra-ui/react";
 import Image from "next/image";
 import {
+  cfav1forwarder_ABI,
   dcafProtocol_ABI,
   dcafWallet_ABI,
   wmatic_ABI,
   wmaticx_ABI,
 } from "../constants/abi";
 import {
+  CFAV1Forwarder_Address,
+  WETH_Address,
   WMATIC_Address,
   WMATICx_Address,
   dcafProtocol_Address,
@@ -31,25 +34,8 @@ import { parseEther } from "viem";
 const Dca = () => {
   const [maticValue, setMaticValue] = useState();
   const [amountToUpgrade, setAmountToUpgrade] = useState();
-  const toUnixTime = (year, month, day, hr, min, sec) => {
-    const date = new Date(Date.UTC(year, month - 1, day, hr, min, sec));
-    return Math.floor(date.getTime() / 1000);
-  };
+  const [flowRateUnit, setFlowRateUnit] = useState();
   const [timePeriodInput, setTimePeriodInput] = useState("");
-
-  const getUnixTime = () => {
-    const datetime = new Date(timePeriodInput);
-    const year = datetime.getFullYear();
-    const month = datetime.getMonth() + 1;
-    const day = datetime.getDate();
-    const hr = datetime.getHours();
-    const min = datetime.getMinutes();
-    const sec = datetime.getSeconds();
-    const time = toUnixTime(year, month, day, hr, min, sec);
-    console.log(time);
-    setTimePeriodInput(time);
-  };
-
   const [tokens, setTokens] = useState(false);
   const [selectIn, setSelectIn] = useState("Select a Token");
   const [selectInLogo, setSelectInLogo] = useState("");
@@ -57,18 +43,6 @@ const Dca = () => {
   const [selectOut, setSelectOut] = useState("Select a Token");
   const [selectOutLogo, setSelectOutLogo] = useState("");
   const [dropOut, setDropOut] = useState(false);
-
-  const inToken = (token, logo) => {
-    setSelectIn(token);
-    setSelectInLogo(logo);
-    setDropIn(false);
-  };
-  const OutToken = (token, logo) => {
-    setSelectOut(token);
-    setSelectOutLogo(logo);
-    setDropOut(false);
-  };
-
   const [superTokenAdd, setSuperTokenAdd] = useState();
   const [tokenOut, setTokenOut] = useState();
   const [tokenIn, setTokenIn] = useState();
@@ -90,6 +64,60 @@ const Dca = () => {
     abi: dcafProtocol_ABI,
   };
 
+  const handleFlowRate = (_flowRate) => {
+    console.log(_flowRate);
+    if (!_flowRate) return;
+    if (flowRateUnit == "sec") {
+      setFlowRate(parseEther(`${_flowRate}`));
+    } else if (flowRateUnit == "min") {
+      setFlowRate(parseEther(`${_flowRate / 60}`));
+    } else if (flowRateUnit == "hour") {
+      setFlowRate(parseEther(`${_flowRate / (60 * 60)}`));
+    } else if (flowRateUnit == "days") {
+      setFlowRate(parseEther(`${_flowRate / (60 * 60 * 24)}`));
+    } else if (flowRateUnit == "months") {
+      setFlowRate(parseEther(`${_flowRate / (60 * 60 * 24 * 30)}`));
+    } else {
+      console.log("Invalid Unit");
+    }
+  };
+
+  useEffect(() => {
+    if (flowRate) {
+      console.log(flowRate);
+    }
+  }, [flowRate]);
+
+  const inToken = (token, logo) => {
+    setSelectIn(token);
+    setSelectInLogo(logo);
+    setDropIn(false);
+    setTokenIn(WMATIC_Address);
+    setSuperTokenAdd(WMATICx_Address);
+  };
+  const OutToken = (token, logo) => {
+    setSelectOut(token);
+    setSelectOutLogo(logo);
+    setDropOut(false);
+    setTokenOut(WETH_Address);
+  };
+
+  const getUnixTime = () => {
+    const datetime = new Date(timePeriodInput);
+    const year = datetime.getFullYear();
+    const month = datetime.getMonth() + 1;
+    const day = datetime.getDate();
+    const hr = datetime.getHours();
+    const min = datetime.getMinutes();
+    const sec = datetime.getSeconds();
+    const time = toUnixTime(year, month, day, hr, min, sec);
+    console.log(time);
+    setTimePeriodInput(time);
+  };
+  const toUnixTime = (year, month, day, hr, min, sec) => {
+    const date = new Date(Date.UTC(year, month - 1, day, hr, min, sec));
+    return Math.floor(date.getTime() / 1000);
+  };
   const wrapMatic = async () => {
     try {
       if (!maticValue) {
@@ -108,13 +136,14 @@ const Dca = () => {
       console.log(tx);
     } catch (error) {
       console.log(error);
+      window.alert(error);
     }
   };
 
   const approveTokenUse = async () => {
     try {
       if (!amountToUpgrade) {
-        console.log("WMATIC amount tot upgrade is missing");
+        console.log("WMATIC amount to upgrade is missing");
         return;
       }
 
@@ -129,6 +158,7 @@ const Dca = () => {
       console.log(tx);
     } catch (error) {
       console.log(error);
+      window.alert(error);
     }
   };
 
@@ -145,8 +175,9 @@ const Dca = () => {
         functionName: "allowance",
         args: [address, WMATICx_Address],
       });
+      console.log(approvedAmount);
 
-      if (approvedAmount >= parseEther(amountToUpgrade)) {
+      if (approvedAmount >= `${parseEther(amountToUpgrade)}n`) {
         console.log("Please approve the token usage first");
         return;
       }
@@ -176,6 +207,7 @@ const Dca = () => {
       console.log(tx);
     } catch (error) {
       console.log(error);
+      window.alert(error);
     }
   };
 
@@ -185,31 +217,29 @@ const Dca = () => {
         console.log("Enter Flow rate to be allowed");
         return;
       }
-      const sf = await Framework.create({
-        chainId: 80001, //i.e. 137 for matic
-        provider: publicClient, // i.e. the provider being used
+      const { request } = await publicClient.simulateContract({
+        address: CFAV1Forwarder_Address,
+        abi: cfav1forwarder_ABI,
+        functionName: "grantPermissions",
+        account: address,
+        args: [WMATICx_Address, dcafProtocol_Address],
       });
-
-      const wmaticx = await sf.loadSuperToken(WMATICx_Address);
-      console.log(wmaticx);
-
-      const updateFlowOperatorOperation = wmaticx.updateFlowOperatorPermissions(
-        {
-          flowOperator: dcafProtocol_Address,
-          permissions: 7,
-          flowRateAllowance: flowRate,
-        }
-      );
-      console.log("Updating the flow operator permissions");
-      const result = await updateFlowOperatorOperation.exec(walletClient);
-      console.log(result);
+      console.log("Upgrading the asset");
+      const tx = await walletClient.writeContract(request);
+      console.log(tx);
     } catch (error) {
       console.log(error);
+      window.alert(error);
     }
   };
 
   const createDCAOrder = async () => {
     try {
+      if (!flowRate && !totalTimePeriod && !dcaFreq) {
+        return;
+        console.log("Check your inputs");
+        window.alert("Check inputs");
+      }
       const { request } = await publicClient.simulateContract({
         ...dcaf_contract,
         functionName: "createDCA",
@@ -237,20 +267,22 @@ const Dca = () => {
                     <p className="text-2xl">Flow rate</p>
                     <div className="flex mt-2 align-middle items-center">
                       <input
-                        type="text"
+                        type="number"
                         placeholder="0.0"
+                        onChange={(e) => handleFlowRate(e.target.value)}
                         className="focus:border-green-500 px-2 py-2 w-full text-2xl border-slate-300"
                       ></input>
                       <Select
                         variant="filled"
                         placeholder=""
                         className="px-1 mx-3"
+                        onChange={(e) => setFlowRateUnit(e.target.value)}
                       >
-                        <option value="">/seconds</option>
-                        <option value="">/minute</option>
-                        <option value="">/hour</option>
-                        <option value="">/days</option>
-                        <option value="">/months</option>
+                        <option value="sec">/seconds</option>
+                        <option value="min">/minute</option>
+                        <option value="hour">/hour</option>
+                        <option value="days">/days</option>
+                        <option value="months">/months</option>
                       </Select>
                     </div>
                     <div className="flex flex-col mt-6">
@@ -385,8 +417,16 @@ const Dca = () => {
                     </Table>
                   </TableContainer>
                   <div className="mt-10 flex justify-center">
+                    {/* <input
+                      type="number"
+                      placeholder="0"
+                      onChange={(e) => setFlowRate(e.target.value)}
+                      className="focus:border-green-500 px-2 py-2 w-full text-2xl border-slate-300"
+                    ></input> */}
                     <button
                       onClick={() => setTokens(true)}
+                      // onClick={() => approveOperator()}
+                      disabled={!tokenIn && !tokenOut ? true : false}
                       className="bg-green-500 text-white px-10 py-3 rounded-xl text-lg hover:bg-white hover:text-green-500 hover:border hover:border-green-500 duration-200"
                     >
                       Stream
