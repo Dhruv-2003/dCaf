@@ -1,14 +1,30 @@
 import React, { useState, useEffect } from "react";
 import { Select, Stack } from "@chakra-ui/react";
-import { dcafProtocol_ABI, dcafWallet_ABI } from "../constants/abi";
-import { dcafProtocol_Address } from "../constants/contracts";
+import {
+  dcafProtocol_ABI,
+  dcafWallet_ABI,
+  wmatic_ABI,
+  wmaticx_ABI,
+} from "../constants/abi";
+import {
+  WMATIC_Address,
+  WMATICx_Address,
+  dcafProtocol_Address,
+} from "../constants/contracts";
 import { useAccount, useWalletClient, usePublicClient } from "wagmi";
 import { getContract } from "wagmi/actions";
+import { Framework, SuperToken } from "@superfluid-finance/sdk-core";
+import { parseEther } from "viem";
 
 const Dca = () => {
+  const [maticValue, setMaticValue] = useState();
+  const [amountToUpgrade, setAmountToUpgrade] = useState();
   const [superTokenAdd, setSuperTokenAdd] = useState();
   const [tokenOut, setTokenOut] = useState();
   const [tokenIn, setTokenIn] = useState();
+  const [flowRate, setFlowRate] = useState(); // converted into wei/sec
+  const [totalTimePeriod, setTotalTimePeriod] = useState(); // converted into secs from start to end
+  const [dcaFreq, setDcaFreq] = useState(); // converted into secs from hours and days
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
@@ -26,6 +42,20 @@ const Dca = () => {
 
   const wrapMatic = async () => {
     try {
+      if (!maticValue) {
+        console.log("Enter the matic value");
+        return;
+      }
+
+      const { request } = await publicClient.simulateContract({
+        address: WMATIC_Address,
+        abi: wmatic_ABI,
+        functionName: "deposit",
+        account: address,
+        value: parseEther(maticValue),
+      });
+      const tx = await walletClient.writeContract(request);
+      console.log(tx);
     } catch (error) {
       console.log(error);
     }
@@ -33,6 +63,20 @@ const Dca = () => {
 
   const approveTokenUse = async () => {
     try {
+      if (!amountToUpgrade) {
+        console.log("WMATIC amount tot upgrade is missing");
+        return;
+      }
+
+      const { request } = await publicClient.simulateContract({
+        address: WMATIC_Address,
+        abi: wmatic_ABI,
+        functionName: "approve",
+        account: address,
+        args: [WMATICx_Address, parseEther(amountToUpgrade)],
+      });
+      const tx = await walletClient.writeContract(request);
+      console.log(tx);
     } catch (error) {
       console.log(error);
     }
@@ -40,6 +84,46 @@ const Dca = () => {
 
   const upgrade = async () => {
     try {
+      if (!amountToUpgrade) {
+        console.log("Enter the amount to upgrade");
+        return;
+      }
+
+      const approvedAmount = await publicClient.readContract({
+        address: WMATIC_Address,
+        abi: wmatic_ABI,
+        functionName: "allowance",
+        args: [address, WMATICx_Address],
+      });
+
+      if (approvedAmount >= parseEther(amountToUpgrade)) {
+        console.log("Please approve the token usage first");
+        return;
+      }
+
+      // const config = {
+      //   hostAddress: "0xEB796bdb90fFA0f28255275e16936D25d3418603",
+      //   cfaV1Address: "0x49e565Ed1bdc17F3d220f72DF0857C26FA83F873",
+      //   idaV1Address: "0x804348D4960a61f2d5F9ce9103027A3E849E09b8",
+      // };
+
+      // const wmaticx = await SuperToken.create({
+      //   address: WMATICx_Address,
+      //   config,
+      //   networkName: "maticmumbai", // you can also pass in chainId instead (e.g. chainId: 137)
+      //   provider: publicClient,
+      // });
+
+      const { request } = await publicClient.simulateContract({
+        address: WMATICx_Address,
+        abi: wmaticx_ABI,
+        functionName: "upgrade",
+        account: address,
+        args: [parseEther(amountToUpgrade)],
+      });
+      console.log("Upgrading the asset");
+      const tx = await walletClient.writeContract(request);
+      console.log(tx);
     } catch (error) {
       console.log(error);
     }
@@ -47,6 +131,28 @@ const Dca = () => {
 
   const approveOperator = async () => {
     try {
+      if (!flowRate) {
+        console.log("Enter Flow rate to be allowed");
+        return;
+      }
+      const sf = await Framework.create({
+        chainId: 80001, //i.e. 137 for matic
+        provider: publicClient, // i.e. the provider being used
+      });
+
+      const wmaticx = await sf.loadSuperToken(WMATICx_Address);
+      console.log(wmaticx);
+
+      const updateFlowOperatorOperation = wmaticx.updateFlowOperatorPermissions(
+        {
+          flowOperator: dcafProtocol_Address,
+          permissions: 7,
+          flowRateAllowance: flowRate,
+        }
+      );
+      console.log("Updating the flow operator permissions");
+      const result = await updateFlowOperatorOperation.exec(walletClient);
+      console.log(result);
     } catch (error) {
       console.log(error);
     }
@@ -57,10 +163,11 @@ const Dca = () => {
       const { request } = await publicClient.simulateContract({
         ...dcaf_contract,
         functionName: "createDCA",
-        args: [],
+        args: [superTokenAdd, tokenOut, flowRate, totalTimePeriod, dcaFreq],
         account: address,
       });
-      walletClient.writeContract({});
+      const tx = await walletClient.writeContract(request);
+      console.log(tx);
     } catch (error) {
       console.log(error);
     }
