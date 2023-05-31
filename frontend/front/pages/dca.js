@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React,{ useState, useEffect } from "react";
 import { Select } from "@chakra-ui/react";
 import matic from "../public/polygon-token.svg";
 import eth from "../public/ethereum.svg";
@@ -12,6 +12,10 @@ import {
   TableContainer,
 } from "@chakra-ui/react";
 import Image from "next/image";
+import { dcafProtocol_ABI, dcafWallet_ABI } from "../constants/abi";
+import { dcafProtocol_Address } from "../constants/contracts";
+import { useAccount, useWalletClient, usePublicClient } from "wagmi";
+import { getContract } from "wagmi/actions";
 
 const Dca = () => {
   const toUnixTime = (year, month, day, hr, min, sec) => {
@@ -52,6 +56,65 @@ const Dca = () => {
     setDropOut(false);
   };
 
+  const [superTokenAdd, setSuperTokenAdd] = useState();
+  const [tokenOut, setTokenOut] = useState();
+  const [tokenIn, setTokenIn] = useState();
+  const { address } = useAccount();
+  const publicClient = usePublicClient();
+  const { data: walletClient } = useWalletClient();
+  const dcafProtocolContract = getContract({
+    address: dcafProtocol_Address,
+    abi: dcafProtocol_ABI,
+    publicClient,
+    walletClient,
+  });
+
+  const dcaf_contract = {
+    address: dcafProtocol_Address,
+    abi: dcafProtocol_ABI,
+  };
+
+  const wrapMatic = async () => {
+    try {
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const approveTokenUse = async () => {
+    try {
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const upgrade = async () => {
+    try {
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const approveOperator = async () => {
+    try {
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const createDCAOrder = async () => {
+    try {
+      const { request } = await publicClient.simulateContract({
+        ...dcaf_contract,
+        functionName: "createDCA",
+        args: [],
+        account: address,
+      });
+      walletClient.writeContract({});
+    } catch (error) {
+      console.log(error);
+    }
+  };
   return (
     <div className="w-full">
       <div className="flex justify-center items-center mx-auto ">
