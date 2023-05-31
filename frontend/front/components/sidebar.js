@@ -22,7 +22,7 @@ const Sidebar = ({children}) => {
             </ul>
           </div>
           <div className="bottom-0 absolute mb-10 mx-8">
-            <ConnectButton chainStatus="none"/>
+            <ConnectButton chainStatus="none" showBalance={false}/>
           </div>
         </div>
       </div>

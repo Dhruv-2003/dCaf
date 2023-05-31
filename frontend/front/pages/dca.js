@@ -289,8 +289,8 @@ const Dca = () => {
                         onClick={() => approveOperator()}
                         className={`bg-blue-400 text-white px-10 py-3 rounded-xl text-lg ${
                           approved
-                            ? `cursor-pointer hover:bg-white hover:text-blue-500 hover:border hover:border-blue-500 duration-200`
-                            : `cursor-not-allowed`
+                            ? `cursor-not-allowed`
+                            : `cursor-pointer hover:bg-white hover:text-blue-500 hover:border hover:border-blue-500 duration-200`
                         }`}
                       >
                         Approve Stream

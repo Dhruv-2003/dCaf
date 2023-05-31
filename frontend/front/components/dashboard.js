@@ -188,12 +188,26 @@ const Dashboard = () => {
                             </AccordionButton>
                           </h2>
                           <AccordionPanel pb={4}>
-                            <div className="mx-10 flex justify-between">
-                              <button className="bg-green-200 px-7 py-1 rounded-md text-green-600">
-                                edit
-                              </button>
-                              <button className="bg-red-200 px-7 py-1 rounded-md text-red-600">
-                                cancel
+                            <div className="flex justify-between">
+                              <div>
+                                <a href={`https://app.superfluid.finance/stream/polygon-mumbai/${dcaOrderData.creator}-${dcaOrderData.wallet}-${WMATICx_Address}-0.0`}>
+                                  <button className="bg-slate-200 px-7 py-1 rounded-md text-slate-500 mx-2">
+                                    Stream
+                                  </button>
+                                </a>
+                                <a href={`https://app.gelato.network/task/${dcaOrderData.task1Id}?chainId=80001`}>
+                                  <button className="bg-slate-200 px-7 py-1 rounded-md text-slate-500 mx-2">
+                                    Task 1
+                                  </button>
+                                </a>
+                                <a href={`https://app.gelato.network/task/${dcaOrderData.task2Id}?chainId=80001`}>
+                                  <button className="bg-slate-200 px-7 py-1 rounded-md text-slate-500 mx-2">
+                                    Task 2
+                                  </button>
+                                </a>
+                              </div>
+                              <button className="bg-red-200 px-7 py-1 rounded-md text-red-600 mx-2">
+                                Cancel
                               </button>
                             </div>
                           </AccordionPanel>
