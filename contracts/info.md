@@ -26,3 +26,25 @@ https://app.gelato.network/task/0x6b9ed087546d67c3db700db4977f711223f52652921e3c
 ##Checklist
 
 - https://mumbai.polygonscan.com/address/0xcfA132E353cB4E398080B9700609bb008eceB125#writeContract
+
+## What do we do ??
+
+We have created a DEFI investement platform with Dollar cost Averaging Startegy to streamline investing peacefully on autmoation. This platform is for all the Degens who want to invest in an asset , but don't have the time and power to balance their portfolio at instances.
+
+## What is Dollar Cost averaging ?
+
+Dollar Cost averaging is an investement strategy where the user buys an asset at certain time intervals to reduce risks , the assets is bought at different prices in small amounts to average the out the price of the assets over a long time period which help them invest in the asset at a good average price. This removes the hassle of constantly checking the price and buying the assets , facing FOMO for not buying when the asset is at the lowest. Funds are not to be transferred at a single moment, they are streamed every second from your account directly to your portfolio, so little to no Risk of losing the funds.
+
+## How our platform helps ?
+
+Our Platform streamlines the process with just 1 click , Create a DCAOrder , Stream your assets with Superfluid into your personal wallet , and put your investing portfolio on auto pilot with Gelato. We handle everything from creating the stream right away to fulfilling your trade on time and completing the order at the End Date. The order can be cancelled at any point of time if needed to , only by you.
+
+## What happend in the backend ??
+
+In the backend , the superTokens are streamed into a freshly created dcaWallet , which will then create Gelato automation task to execute your order at the dcaFreq time you choose and the assets are unwrapped and swapped with the token you want to buy on uniswap under the hood , which will then be transferred back to your wallet. On the end of the order trade , the stream is cancelled , the remaining assets are returned and tasks are cancelled , to close your dcaOrder.
+
+This was a quite a Unique and learning experience for us and we also faced a lot of challenges. We learned a lot about the Detailed concepts of investment strategies
+
+### Challenge 1
+
+Was to create the actual architectue of how everything would work in the backend , for which we put a lot of time in creating the actual flow of everything and how backend would work with Superfluid and Gelato

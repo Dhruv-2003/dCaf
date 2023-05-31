@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "./interfaces/Gelato/AutomateTaskCreator.sol";
-import "./dcaWallet.sol";
+import "./limitWallet.sol";
 import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 // import {CFAv1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/CFAv1Library.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -42,7 +42,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 // - afterSwap() -  send the exchanged tokens to the user directly
 // - cancelDCATask() - after time period is over , it will cancel the task1 and the stream
 
-contract dCafProtocol is AutomateTaskCreator, Ownable {
+contract limitCafProtocol is AutomateTaskCreator, Ownable {
     using SuperTokenV1Library for ISuperToken;
     ISwapRouter public immutable swapRouter;
     uint24 public constant poolFee = 3000;
