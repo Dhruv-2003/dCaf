@@ -49,6 +49,7 @@ const Dca = () => {
     min: 0,
     sec: 0,
   });
+  const [approved, setApproved] = useState(false);
   const [superTokenAdd, setSuperTokenAdd] = useState();
   const [tokenOut, setTokenOut] = useState();
   const [tokenIn, setTokenIn] = useState();
@@ -379,7 +380,13 @@ const Dca = () => {
                       onChange={(e) => setGelatoFees(e.target.value)}
                       className="focus:border-green-500 px-2 py-2 w-full text-2xl border-slate-300"
                     ></input>
-                    <div className="flex justify-center items-center mt-10">
+                    <div className="flex justify-between mt-10">
+                      <button
+                        onClick={() => getFrequency()}
+                        className={`bg-blue-400 text-white px-10 py-3 rounded-xl text-lg ${approved ? `cursor-pointer hover:bg-white hover:text-blue-500 hover:border hover:border-blue-500 duration-200`: `cursor-not-allowed`}`}
+                      >
+                        Approve Stream
+                      </button>
                       <button
                         onClick={() => createDCAOrder()}
                         className="bg-green-500 text-white px-10 py-3 rounded-xl text-lg hover:bg-white hover:text-green-500 hover:border hover:border-green-500 duration-200"
