@@ -254,9 +254,9 @@ const Dca = () => {
       const dcaFreq = await getFrequency();
       const totalTime = await getTotalTime();
       if (!flowRate && !totalTime && !dcaFreq && !gelatoFees) {
-        return;
         console.log("Check your inputs");
         window.alert("Check inputs");
+        return;
       }
       console.log(superTokenAdd, tokenOut, flowRate, totalTime, dcaFreq);
       const { request } = await publicClient.simulateContract({
@@ -273,6 +273,7 @@ const Dca = () => {
       window.alert(error);
     }
   };
+
   return (
     <div className="w-full">
       <div className="flex justify-center items-center mx-auto ">
