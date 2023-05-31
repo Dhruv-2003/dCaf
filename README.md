@@ -1,9 +1,37 @@
-## dCaf
+# dCaf
+Dollar Cost Averaging Protocol
 
-- Dollar cost average protocol
+## Introduction
 
-Build a smart contract that accepts a stream of Super Tokens and on a fixed interval takes the accumulated Super Tokens, unwraps them, swaps them to a desired token, wraps the received tokens, and then distributes them back to investors. This fixed interval action can be accomplished with Gelato Automations.
+## How does it Work?
 
-- Limit cost average
+Here's a Flowchart to understand easily
 
-Executing the swaps at a certain price every week and checked , as soon as the price hits , this would swap all the incoming tokens for the user
+<img width="467" alt="Screenshot 2023-05-31 at 10 40 49 PM" src="https://github.com/Dhruv-2003/dCaf/assets/90101251/38b8809f-5a9d-4353-b5fa-0881dfd14443">
+
+## Why is it useful?
+
+## Proof Of Work
+
+### Transactions successfully done
+#### Stream
+https://mumbai.polygonscan.com/tx/0x7ef695c1f18da17a90522f64d6872fb2eb7b15e37f6bd6b1dad6ef418befdb6e
+
+### Gelato Tasks
+https://mumbai.polygonscan.com/tx/0x0230a336dcb27b7cf1d8cd4e2c1e42b59dbfa9bf0704a69e41228b7245b63312
+https://mumbai.polygonscan.com/tx/0x4e9e78ea4c2460e23f66492b28e7ce938f401e67aabda371c60af992c1052089
+
+#### Task1
+https://app.gelato.network/task/0xaa46c2ec6bad35ce53be6aa6797a56dffdd59302a9d8030ae8a13f64396ad0c5?chainId=80001
+#### Task2
+https://app.gelato.network/task/0x6b9ed087546d67c3db700db4977f711223f52652921e3cae1abefd822aaa1baf?chainId=80001
+
+![WhatsApp Image 2023-05-31 at 9 33 09 PM (3)](https://github.com/Dhruv-2003/dCaf/assets/90101251/4af05f35-ed2e-4772-92d8-5cecb4b17060)
+
+## Technologies Used
+
+### Superfluid
+### Gelato
+### Uniswap
+
+
