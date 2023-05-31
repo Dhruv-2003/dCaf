@@ -148,6 +148,11 @@ const Dca = () => {
       console.log("Upgrading the asset");
       const tx = await walletClient.writeContract(request);
       console.log(tx);
+      const transaction = await publicClient.waitForTransactionReceipt({
+        hash: tx,
+      });
+      console.log(transaction);
+      setApproved(true);
     } catch (error) {
       console.log(error);
       window.alert(error);
@@ -173,6 +178,10 @@ const Dca = () => {
       });
       const tx = await walletClient.writeContract(request);
       console.log(tx);
+      const transaction = await publicClient.waitForTransactionReceipt({
+        hash: tx,
+      });
+      console.log(transaction);
     } catch (error) {
       console.log(error);
       window.alert(error);
@@ -280,12 +289,12 @@ const Dca = () => {
                     </div>
                     <div className="mt-6 flex flex-col">
                       <p className="text-black text-2xl">Gelato Fees</p>
-                    <input
-                      type="number"
-                      placeholder="0.0"
-                      onChange={(e) => setGelatoFees(e.target.value)}
-                      className="focus:border-green-500 px-2 py-2 w-full text-2xl border-slate-300 mt-3"
-                    ></input>
+                      <input
+                        type="number"
+                        placeholder="0.0"
+                        onChange={(e) => setGelatoFees(e.target.value)}
+                        className="focus:border-green-500 px-2 py-2 w-full text-2xl border-slate-300 mt-3"
+                      ></input>
                     </div>
                     <div className="flex justify-between mt-10">
                       <button
@@ -300,7 +309,11 @@ const Dca = () => {
                       </button>
                       <button
                         onClick={() => createDCAOrder()}
-                        className={`bg-green-500 text-white px-10 py-3 rounded-xl text-lg  ${approved ? `hover:bg-white hover:text-green-500 hover:border hover:border-green-500 duration-200 cursor-pointer` : `cursor-not-allowed`}`}
+                        className={`bg-green-500 text-white px-10 py-3 rounded-xl text-lg  ${
+                          approved
+                            ? `hover:bg-white hover:text-green-500 hover:border hover:border-green-500 duration-200 cursor-pointer`
+                            : `cursor-not-allowed`
+                        }`}
                       >
                         Start stream
                       </button>
