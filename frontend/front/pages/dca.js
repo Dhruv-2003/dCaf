@@ -278,12 +278,15 @@ const Dca = () => {
                         <p className="mx-2 text-xl"></p>
                       </div>
                     </div>
+                    <div className="mt-6 flex flex-col">
+                      <p className="text-black text-2xl">Gelato Fees</p>
                     <input
                       type="number"
                       placeholder="0.0"
                       onChange={(e) => setGelatoFees(e.target.value)}
-                      className="focus:border-green-500 px-2 py-2 w-full text-2xl border-slate-300"
+                      className="focus:border-green-500 px-2 py-2 w-full text-2xl border-slate-300 mt-3"
                     ></input>
+                    </div>
                     <div className="flex justify-between mt-10">
                       <button
                         onClick={() => approveOperator()}
