@@ -4,13 +4,19 @@ import localFont from "next/font/local";
 import "@rainbow-me/rainbowkit/styles.css";
 import { getDefaultWallets, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { configureChains, createConfig, WagmiConfig } from "wagmi";
-import { mainnet, polygon, optimism, arbitrum } from "wagmi/chains";
+import {
+  mainnet,
+  polygon,
+  optimism,
+  arbitrum,
+  polygonMumbai,
+} from "wagmi/chains";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 import Sidebar from "../components/sidebar";
 
 const { chains, publicClient } = configureChains(
-  [mainnet, polygon, optimism, arbitrum],
+  [mainnet, polygon, optimism, arbitrum, polygonMumbai],
   [alchemyProvider({ apiKey: process.env.ALCHEMY_ID }), publicProvider()]
 );
 
@@ -35,7 +41,7 @@ function MyApp({ Component, pageProps }) {
         <RainbowKitProvider chains={chains}>
           <main className={myFont.className}>
             <Sidebar>
-            <Component {...pageProps} />
+              <Component {...pageProps} />
             </Sidebar>
           </main>
         </RainbowKitProvider>
