@@ -38,7 +38,6 @@ import {
 } from "../constants/contracts";
 import { formatEther } from "viem";
 const Dashboard = () => {
-  // const { isConnected } = useAccount();
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
@@ -57,7 +56,7 @@ const Dashboard = () => {
         functionName: "dcafOrders",
         args: [dcafOrderId],
       });
-      // console.log(data);
+      console.log(data);
       setDcaWallet(data[1]);
       const finalData = {
         creator: data[0],
@@ -71,8 +70,9 @@ const Dashboard = () => {
         task1Id: data[11],
         task2Id: data[12],
       };
+      console.log(finalData);
       setDcaOrderActive(data[10]);
-      // setDcaOrderData(finalData);
+      setDcaOrderData(finalData);
     } catch (error) {
       console.log(error);
     }
@@ -129,9 +129,10 @@ const Dashboard = () => {
   }
 
   useEffect(() => {
-    if (dcafOrderId) {
-      fetchOrderDetail();
-    }
+    // if (dcafOrderId) {
+    //   fetchOrderDetail();
+    // }
+    fetchOrderDetail();
   }, [dcafOrderId]);
 
   return (
@@ -146,7 +147,7 @@ const Dashboard = () => {
               <div className="mt-8 w-3/4 justify-center flex items-center mx-auto">
                 <div className="border border-gray-200 px-4 py-3 rounded-xl shadow-xl">
                   <div>
-                    {dcaOrderData && (
+                    {dcaOrderData ? (
                       <Accordion
                         defaultIndex={[1]}
                         allowMultiple={true}
@@ -198,6 +199,8 @@ const Dashboard = () => {
                           </AccordionPanel>
                         </AccordionItem>
                       </Accordion>
+                    ) : (
+                      <a>No DCA order Found</a>
                     )}
                   </div>
                 </div>
