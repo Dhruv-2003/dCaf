@@ -1,4 +1,4 @@
-import React, { useState} from "react";
+import React, { useState, useEffect } from "react";
 import { Select } from "@chakra-ui/react";
 import matic from "../public/polygon-token.svg";
 import eth from "../public/ethereum.svg";
@@ -29,11 +29,8 @@ import {
 import { useAccount, useWalletClient, usePublicClient } from "wagmi";
 import { getContract } from "wagmi/actions";
 import { Framework, SuperToken } from "@superfluid-finance/sdk-core";
-import { parseEther } from "viem";
 
 const Dca = () => {
-  const [maticValue, setMaticValue] = useState();
-  const [amountToUpgrade, setAmountToUpgrade] = useState();
   const [flowRateUnit, setFlowRateUnit] = useState();
   const [timePeriodInput, setTimePeriodInput] = useState("");
   const [tokens, setTokens] = useState(false);
@@ -135,99 +132,6 @@ const Dca = () => {
     return totalTime;
   };
 
-  const wrapMatic = async () => {
-    try {
-      if (!maticValue) {
-        console.log("Enter the matic value");
-        return;
-      }
-
-      const { request } = await publicClient.simulateContract({
-        address: WMATIC_Address,
-        abi: wmatic_ABI,
-        functionName: "deposit",
-        account: address,
-        value: parseEther(maticValue),
-      });
-      const tx = await walletClient.writeContract(request);
-      console.log(tx);
-    } catch (error) {
-      console.log(error);
-      window.alert(error);
-    }
-  };
-
-  const approveTokenUse = async () => {
-    try {
-      if (!amountToUpgrade) {
-        console.log("WMATIC amount to upgrade is missing");
-        return;
-      }
-
-      const { request } = await publicClient.simulateContract({
-        address: WMATIC_Address,
-        abi: wmatic_ABI,
-        functionName: "approve",
-        account: address,
-        args: [WMATICx_Address, parseEther(amountToUpgrade)],
-      });
-      const tx = await walletClient.writeContract(request);
-      console.log(tx);
-    } catch (error) {
-      console.log(error);
-      window.alert(error);
-    }
-  };
-
-  const upgrade = async () => {
-    try {
-      if (!amountToUpgrade) {
-        console.log("Enter the amount to upgrade");
-        return;
-      }
-
-      const approvedAmount = await publicClient.readContract({
-        address: WMATIC_Address,
-        abi: wmatic_ABI,
-        functionName: "allowance",
-        args: [address, WMATICx_Address],
-      });
-      console.log(approvedAmount);
-
-      if (approvedAmount >= `${parseEther(amountToUpgrade)}n`) {
-        console.log("Please approve the token usage first");
-        return;
-      }
-
-      // const config = {
-      //   hostAddress: "0xEB796bdb90fFA0f28255275e16936D25d3418603",
-      //   cfaV1Address: "0x49e565Ed1bdc17F3d220f72DF0857C26FA83F873",
-      //   idaV1Address: "0x804348D4960a61f2d5F9ce9103027A3E849E09b8",
-      // };
-
-      // const wmaticx = await SuperToken.create({
-      //   address: WMATICx_Address,
-      //   config,
-      //   networkName: "maticmumbai", // you can also pass in chainId instead (e.g. chainId: 137)
-      //   provider: publicClient,
-      // });
-
-      const { request } = await publicClient.simulateContract({
-        address: WMATICx_Address,
-        abi: wmaticx_ABI,
-        functionName: "upgrade",
-        account: address,
-        args: [parseEther(amountToUpgrade)],
-      });
-      console.log("Upgrading the asset");
-      const tx = await walletClient.writeContract(request);
-      console.log(tx);
-    } catch (error) {
-      console.log(error);
-      window.alert(error);
-    }
-  };
-
   const approveOperator = async () => {
     try {
       if (!flowRate) {
@@ -282,7 +186,7 @@ const Dca = () => {
           <div className="flex flex-col justify-center items-center mx-auto">
             {tokens ? (
               <div className="px-10 py-3 border border-zinc-300 rounded-xl shadow-xl">
-                <div className=" bg-green-200 text-green-700 px-2 py-0.5 rounded-xl w-28 -ml-2">
+                <div className=" bg-green-200 text-green-700 px-2 py-0.5 rounded-xl">
                   <p>Send stream</p>
                 </div>
                 <div className="flex flex-col justify-start">
@@ -291,7 +195,7 @@ const Dca = () => {
                     <div className="flex mt-2 align-middle items-center">
                       <input
                         type="number"
-                        placeholder="0.0 (in matic)"
+                        placeholder="0.0"
                         onChange={(e) => handleFlowRate(e.target.value)}
                         className="focus:border-green-500 px-2 py-2 w-full text-2xl border-slate-300"
                       ></input>
@@ -315,7 +219,6 @@ const Dca = () => {
                         type="datetime-local"
                         value={timePeriodInput}
                         onChange={(e) => setTimePeriodInput(e.target.value)}
-                        required min={new Date().toISOString().split('T')[0]}
                       ></input>
                     </div>
                     <div className="flex flex-col mt-6">
@@ -375,19 +278,20 @@ const Dca = () => {
                         <p className="mx-2 text-xl"></p>
                       </div>
                     </div>
-                    <div className="mt-6 flex flex-col">
-                      <p className="text-black text-2xl">Gelato fees</p>
                     <input
                       type="number"
                       placeholder="0.0"
                       onChange={(e) => setGelatoFees(e.target.value)}
-                      className="focus:border-green-500 px-2 py-2 w-full text-2xl border-slate-300 mt-2"
+                      className="focus:border-green-500 px-2 py-2 w-full text-2xl border-slate-300"
                     ></input>
-                    </div>
                     <div className="flex justify-between mt-10">
                       <button
-                        onClick={() => getFrequency()}
-                        className={`bg-blue-400 text-white px-10 py-3 rounded-xl text-lg ${approved ? `cursor-not-allowed`: `cursor-pointer hover:bg-white hover:text-blue-500 hover:border hover:border-blue-500 duration-200`}`}
+                        onClick={() => approveOperator()}
+                        className={`bg-blue-400 text-white px-10 py-3 rounded-xl text-lg ${
+                          approved
+                            ? `cursor-pointer hover:bg-white hover:text-blue-500 hover:border hover:border-blue-500 duration-200`
+                            : `cursor-not-allowed`
+                        }`}
                       >
                         Approve Stream
                       </button>
