@@ -387,13 +387,13 @@ const Dca = () => {
                     <div className="flex justify-between mt-10">
                       <button
                         onClick={() => getFrequency()}
-                        className={`bg-blue-400 text-white px-10 py-3 rounded-xl text-lg ${approved ? `cursor-pointer hover:bg-white hover:text-blue-500 hover:border hover:border-blue-500 duration-200`: `cursor-not-allowed`}`}
+                        className={`bg-blue-400 text-white px-10 py-3 rounded-xl text-lg ${approved ? `cursor-not-allowed`: `cursor-pointer hover:bg-white hover:text-blue-500 hover:border hover:border-blue-500 duration-200`}`}
                       >
                         Approve Stream
                       </button>
                       <button
                         onClick={() => createDCAOrder()}
-                        className="bg-green-500 text-white px-10 py-3 rounded-xl text-lg hover:bg-white hover:text-green-500 hover:border hover:border-green-500 duration-200"
+                        className={`bg-green-500 text-white px-10 py-3 rounded-xl text-lg  ${approved ? `hover:bg-white hover:text-green-500 hover:border hover:border-green-500 duration-200 cursor-pointer` : `cursor-not-allowed`}`}
                       >
                         Start stream
                       </button>
