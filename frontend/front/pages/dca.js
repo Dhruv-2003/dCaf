@@ -43,6 +43,17 @@ const Dca = () => {
   const [selectOut, setSelectOut] = useState("Select a Token");
   const [selectOutLogo, setSelectOutLogo] = useState("");
   const [dropOut, setDropOut] = useState(false);
+  const [frequency, setFrequency] = useState({
+    day: "",
+    hr: "",
+    min: "",
+    sec : "",
+  });
+
+  const getFrequency = () => {
+    const freq = frequency.day*86400 + frequency.hr*3600 + frequency.min*60 + frequency.sec*1
+    console.log(frequency)
+  }
   const [superTokenAdd, setSuperTokenAdd] = useState();
   const [tokenOut, setTokenOut] = useState();
   const [tokenIn, setTokenIn] = useState();
@@ -301,31 +312,39 @@ const Dca = () => {
                           type="number"
                           placeholder="0 days"
                           className="w-28 px-2 text-xl"
+                          value={frequency.day}
+                          onChange={(event) => {setFrequency({...frequency, day:event.target.value})}}
                         ></input>
                         <p className="mx-2 text-xl">+</p>
                         <input
                           type="number"
                           placeholder="0 hours"
                           className="w-28 px-2 text-xl"
+                          value={frequency.hr}
+                          onChange={(event) => {setFrequency({...frequency, hr:event.target.value})}}
                         ></input>
                         <p className="mx-2 text-xl">+</p>
                         <input
                           type="number"
                           placeholder="0 minutes"
                           className="w-28 px-2 text-xl"
+                          value={frequency.min}
+                          onChange={(event) => {setFrequency({...frequency, min:event.target.value})}}
                         ></input>
                         <p className="mx-2 text-xl">+</p>
                         <input
                           type="number"
                           placeholder="0 seconds"
                           className="w-28 px-2 text-xl"
+                          value={frequency.sec}
+                          onChange={(event) => {setFrequency({...frequency, sec:event.target.value})}}
                         ></input>
                         <p className="mx-2 text-xl"></p>
                       </div>
                     </div>
                     <div className="flex justify-center items-center mt-10">
                       <button
-                        onClick={() => getUnixTime()}
+                        onClick={() => getFrequency()}
                         className="bg-green-500 text-white px-10 py-3 rounded-xl text-lg hover:bg-white hover:text-green-500 hover:border hover:border-green-500 duration-200"
                       >
                         Start stream
