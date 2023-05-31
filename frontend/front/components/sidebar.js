@@ -18,6 +18,7 @@ const Sidebar = ({children}) => {
               <li className="mt-5 hover:bg-green-200 px-6 rounded-xl py-2 cursor-pointer text-slate-700" onClick={() => router.push("/")}>Dashboard</li>
               <li className="mt-5 hover:bg-green-200 px-6 rounded-xl py-2 cursor-pointer text-slate-700 " onClick={() => router.push("/dca")}>Dollar Cost Average</li>
               <li className="mt-5 hover:bg-green-200 px-6 rounded-xl py-2 cursor-pointer text-slate-700" onClick={() => router.push("/loa")}>Limit Order Average</li>
+              <li className="mt-5 hover:bg-green-200 px-6 rounded-xl py-2 cursor-pointer text-slate-700" onClick={() => router.push("/wrap")}>Wrap/Upgrade</li>
             </ul>
           </div>
           <div className="bottom-0 absolute mb-10 mx-8">

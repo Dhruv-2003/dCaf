@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState} from "react";
 import { Select } from "@chakra-ui/react";
 import matic from "../public/polygon-token.svg";
 import eth from "../public/ethereum.svg";
@@ -281,7 +281,7 @@ const Dca = () => {
           <div className="flex flex-col justify-center items-center mx-auto">
             {tokens ? (
               <div className="px-10 py-3 border border-zinc-300 rounded-xl shadow-xl">
-                <div className=" bg-green-200 text-green-700 px-2 py-0.5 rounded-xl">
+                <div className=" bg-green-200 text-green-700 px-2 py-0.5 rounded-xl w-28 -ml-2">
                   <p>Send stream</p>
                 </div>
                 <div className="flex flex-col justify-start">
@@ -290,7 +290,7 @@ const Dca = () => {
                     <div className="flex mt-2 align-middle items-center">
                       <input
                         type="number"
-                        placeholder="0.0"
+                        placeholder="0.0 (in matic)"
                         onChange={(e) => handleFlowRate(e.target.value)}
                         className="focus:border-green-500 px-2 py-2 w-full text-2xl border-slate-300"
                       ></input>
@@ -314,6 +314,7 @@ const Dca = () => {
                         type="datetime-local"
                         value={timePeriodInput}
                         onChange={(e) => setTimePeriodInput(e.target.value)}
+                        required min={new Date().toISOString().split('T')[0]}
                       ></input>
                     </div>
                     <div className="flex flex-col mt-6">
@@ -373,12 +374,15 @@ const Dca = () => {
                         <p className="mx-2 text-xl"></p>
                       </div>
                     </div>
+                    <div className="mt-6 flex flex-col">
+                      <p className="text-black text-2xl">Gelato fees</p>
                     <input
                       type="number"
                       placeholder="0.0"
                       onChange={(e) => setGelatoFees(e.target.value)}
-                      className="focus:border-green-500 px-2 py-2 w-full text-2xl border-slate-300"
+                      className="focus:border-green-500 px-2 py-2 w-full text-2xl border-slate-300 mt-2"
                     ></input>
+                    </div>
                     <div className="flex justify-between mt-10">
                       <button
                         onClick={() => getFrequency()}

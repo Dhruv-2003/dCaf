@@ -7,7 +7,7 @@ const Loa = () => {
         <div className="mt-32">
           <div className="flex flex-col justify-center items-center mx-auto">
             <div className="px-10 py-3 border border-zinc-300 rounded-xl shadow-xl">
-              <div className=" bg-green-200 text-green-700 px-2 py-0.5 rounded-xl">
+              <div className=" bg-green-200 text-green-700 px-2 py-0.5 rounded-xl w-28 -ml-2">
                 <p>Send stream</p>
               </div>
               <div className="flex flex-col justify-start">
