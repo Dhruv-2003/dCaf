@@ -49,6 +49,7 @@ const Dca = () => {
     min: "",
     sec : "",
   });
+  const [approved, setApproved] = useState(false);
 
   const getFrequency = () => {
     const freq = frequency.day*86400 + frequency.hr*3600 + frequency.min*60 + frequency.sec*1
@@ -342,10 +343,16 @@ const Dca = () => {
                         <p className="mx-2 text-xl"></p>
                       </div>
                     </div>
-                    <div className="flex justify-center items-center mt-10">
+                    <div className="flex justify-between mt-10">
                       <button
                         onClick={() => getFrequency()}
-                        className="bg-green-500 text-white px-10 py-3 rounded-xl text-lg hover:bg-white hover:text-green-500 hover:border hover:border-green-500 duration-200"
+                        className={`bg-blue-400 text-white px-10 py-3 rounded-xl text-lg ${approved ? `cursor-pointer hover:bg-white hover:text-blue-500 hover:border hover:border-blue-500 duration-200`: `cursor-not-allowed`}`}
+                      >
+                        Approve Stream
+                      </button>
+                      <button
+                        onClick={() => getFrequency()}
+                        className={`bg-green-500 text-white px-10 py-3 rounded-xl text-lg  ${approved ? `cursor-not-allowed`: `cursor-pointer hover:bg-white hover:text-green-500 hover:border hover:border-green-500 duration-200`}`}
                       >
                         Start stream
                       </button>
