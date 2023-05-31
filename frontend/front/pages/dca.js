@@ -44,22 +44,18 @@ const Dca = () => {
   const [selectOutLogo, setSelectOutLogo] = useState("");
   const [dropOut, setDropOut] = useState(false);
   const [frequency, setFrequency] = useState({
-    day: "",
-    hr: "",
-    min: "",
-    sec : "",
+    day: 0,
+    hr: 0,
+    min: 0,
+    sec: 0,
   });
-
-  const getFrequency = () => {
-    const freq = frequency.day*86400 + frequency.hr*3600 + frequency.min*60 + frequency.sec*1
-    console.log(frequency)
-  }
   const [superTokenAdd, setSuperTokenAdd] = useState();
   const [tokenOut, setTokenOut] = useState();
   const [tokenIn, setTokenIn] = useState();
   const [flowRate, setFlowRate] = useState(); // converted into wei/sec
   const [totalTimePeriod, setTotalTimePeriod] = useState(); // converted into secs from start to end
   const [dcaFreq, setDcaFreq] = useState(); // converted into secs from hours and days
+  const [gelatoFees, setGelatoFees] = useState();
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
@@ -76,7 +72,7 @@ const Dca = () => {
   };
 
   const handleFlowRate = (_flowRate) => {
-    console.log(_flowRate);
+    // console.log(_flowRate);
     if (!_flowRate) return;
     if (flowRateUnit == "sec") {
       setFlowRate(parseEther(`${_flowRate}`));
@@ -93,11 +89,14 @@ const Dca = () => {
     }
   };
 
-  useEffect(() => {
-    if (flowRate) {
-      console.log(flowRate);
-    }
-  }, [flowRate]);
+  const getFrequency = () => {
+    const freq =
+      frequency.day * 86400 +
+      frequency.hr * 3600 +
+      frequency.min * 60 +
+      frequency.sec * 1;
+    return freq;
+  };
 
   const inToken = (token, logo) => {
     setSelectIn(token);
@@ -113,7 +112,11 @@ const Dca = () => {
     setTokenOut(WETH_Address);
   };
 
-  const getUnixTime = () => {
+  const toUnixTime = (year, month, day, hr, min, sec) => {
+    const date = new Date(Date.UTC(year, month - 1, day, hr, min, sec));
+    return Math.floor(date.getTime() / 1000);
+  };
+  const getTotalTime = () => {
     const datetime = new Date(timePeriodInput);
     const year = datetime.getFullYear();
     const month = datetime.getMonth() + 1;
@@ -121,14 +124,16 @@ const Dca = () => {
     const hr = datetime.getHours();
     const min = datetime.getMinutes();
     const sec = datetime.getSeconds();
-    const time = toUnixTime(year, month, day, hr, min, sec);
-    console.log(time);
-    setTimePeriodInput(time);
+    const endTime = toUnixTime(year, month, day, hr, min, sec);
+    console.log(endTime);
+    const currentTime = Math.floor(new Date() / 1000);
+    console.log(currentTime);
+    const totalTime = endTime - currentTime;
+    setTotalTimePeriod(totalTime);
+    console.log(totalTime);
+    return totalTime;
   };
-  const toUnixTime = (year, month, day, hr, min, sec) => {
-    const date = new Date(Date.UTC(year, month - 1, day, hr, min, sec));
-    return Math.floor(date.getTime() / 1000);
-  };
+
   const wrapMatic = async () => {
     try {
       if (!maticValue) {
@@ -246,21 +251,26 @@ const Dca = () => {
 
   const createDCAOrder = async () => {
     try {
-      if (!flowRate && !totalTimePeriod && !dcaFreq) {
+      const dcaFreq = await getFrequency();
+      const totalTime = await getTotalTime();
+      if (!flowRate && !totalTime && !dcaFreq && !gelatoFees) {
         return;
         console.log("Check your inputs");
         window.alert("Check inputs");
       }
+      console.log(superTokenAdd, tokenOut, flowRate, totalTime, dcaFreq);
       const { request } = await publicClient.simulateContract({
         ...dcaf_contract,
         functionName: "createDCA",
-        args: [superTokenAdd, tokenOut, flowRate, totalTimePeriod, dcaFreq],
+        args: [superTokenAdd, tokenOut, flowRate, totalTime, dcaFreq],
         account: address,
+        value: parseEther(gelatoFees),
       });
       const tx = await walletClient.writeContract(request);
       console.log(tx);
     } catch (error) {
       console.log(error);
+      window.alert(error);
     }
   };
   return (
@@ -312,39 +322,65 @@ const Dca = () => {
                           type="number"
                           placeholder="0 days"
                           className="w-28 px-2 text-xl"
-                          value={frequency.day}
-                          onChange={(event) => {setFrequency({...frequency, day:event.target.value})}}
+                          // value={frequency.day}
+                          onChange={(event) => {
+                            setFrequency({
+                              ...frequency,
+                              day: event.target.value,
+                            });
+                          }}
                         ></input>
                         <p className="mx-2 text-xl">+</p>
                         <input
                           type="number"
                           placeholder="0 hours"
                           className="w-28 px-2 text-xl"
-                          value={frequency.hr}
-                          onChange={(event) => {setFrequency({...frequency, hr:event.target.value})}}
+                          // value={frequency.hr}
+                          onChange={(event) => {
+                            setFrequency({
+                              ...frequency,
+                              hr: event.target.value,
+                            });
+                          }}
                         ></input>
                         <p className="mx-2 text-xl">+</p>
                         <input
                           type="number"
                           placeholder="0 minutes"
                           className="w-28 px-2 text-xl"
-                          value={frequency.min}
-                          onChange={(event) => {setFrequency({...frequency, min:event.target.value})}}
+                          // value={frequency.min}
+                          onChange={(event) => {
+                            setFrequency({
+                              ...frequency,
+                              min: event.target.value,
+                            });
+                          }}
                         ></input>
                         <p className="mx-2 text-xl">+</p>
                         <input
                           type="number"
                           placeholder="0 seconds"
                           className="w-28 px-2 text-xl"
-                          value={frequency.sec}
-                          onChange={(event) => {setFrequency({...frequency, sec:event.target.value})}}
+                          // value={frequency.sec}
+                          onChange={(event) => {
+                            setFrequency({
+                              ...frequency,
+                              sec: event.target.value,
+                            });
+                          }}
                         ></input>
                         <p className="mx-2 text-xl"></p>
                       </div>
                     </div>
+                    <input
+                      type="number"
+                      placeholder="0.0"
+                      onChange={(e) => setGelatoFees(e.target.value)}
+                      className="focus:border-green-500 px-2 py-2 w-full text-2xl border-slate-300"
+                    ></input>
                     <div className="flex justify-center items-center mt-10">
                       <button
-                        onClick={() => getFrequency()}
+                        onClick={() => createDCAOrder()}
                         className="bg-green-500 text-white px-10 py-3 rounded-xl text-lg hover:bg-white hover:text-green-500 hover:border hover:border-green-500 duration-200"
                       >
                         Start stream
