@@ -17,7 +17,7 @@ Our Platform streamlines the process with just 1 click , Create a DCAOrder , Str
 
 Here's a Flowchart to understand easily
 
-<img width="467" alt="Screenshot 2023-05-31 at 10 40 49 PM" src="https://github.com/Dhruv-2003/dCaf/assets/90101251/38b8809f-5a9d-4353-b5fa-0881dfd14443">
+![dCaf (3)](https://github.com/Dhruv-2003/dCaf/assets/91938348/2a246d47-0256-4eb6-9f6c-687575bc24f6)
 
 ## Why is it useful?
 
