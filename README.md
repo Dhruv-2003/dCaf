@@ -29,30 +29,26 @@ Our Platform streamlines the process with just 1 click , Create a DCAOrder , Str
 
 ### Create DCA Order
 
-https://mumbai.polygonscan.com/tx/0x7ef695c1f18da17a90522f64d6872fb2eb7b15e37f6bd6b1dad6ef418befdb6e
+https://mumbai.polygonscan.com/tx/0xd96f2d29faf0818465c9f910cec41eae7096bf50baf5ae0be07a53726f12ed9e
 
 ### Stream
 
-https://app.superfluid.finance/stream/polygon-mumbai/0x62C43323447899acb61C18181e34168903E033Bf-0xdF1a91A6662d1CFA9eb3d494A10383a880c32E4F-0xf9c9a7271468e719604ceaef0fbb0d98007bf4fc-0.0
+https://app.superfluid.finance/stream/polygon-mumbai/0x62c43323447899acb61c18181e34168903e033bf-0xdf1a91a6662d1cfa9eb3d494a10383a880c32e4f-0xf9c9a7271468e719604ceaef0fbb0d98007bf4fc-0.0
 
 ### Gelato
 
 #### Task1
 
-https://app.gelato.network/task/0xaa46c2ec6bad35ce53be6aa6797a56dffdd59302a9d8030ae8a13f64396ad0c5?chainId=80001
+https://app.gelato.network/task/0xba170cea0c62ed36ece3ab8253bfc9a4ac24f38263a1856b251bd68282b6b7fe?chainId=80001
 
 #### Task2
 
-https://app.gelato.network/task/0x6b9ed087546d67c3db700db4977f711223f52652921e3cae1abefd822aaa1baf?chainId=8000
-
-### Task execution
-
-https://mumbai.polygonscan.com/tx/0xed8d4e8931e816745a446230ef2a525b45124f71d15de7fe9d2812f19ce47cf8
+https://app.gelato.network/task/0xc079f59862d4999bc1909ac4915a2d731885582e9ce33d1d400909916d337af1?chainId=80001
 
 ### Gelato Tasks Execution
 
-https://mumbai.polygonscan.com/tx/0x0230a336dcb27b7cf1d8cd4e2c1e42b59dbfa9bf0704a69e41228b7245b63312
-https://mumbai.polygonscan.com/tx/0x4e9e78ea4c2460e23f66492b28e7ce938f401e67aabda371c60af992c1052089
+https://mumbai.polygonscan.com/tx/0xe9d68acd5d57c7990b94bd0ff0cbc23713d795ed64b2cff0583267b34aaa78ab
+https://mumbai.polygonscan.com/tx/0xe9d68acd5d57c7990b94bd0ff0cbc23713d795ed64b2cff0583267b34aaa78ab
 
 ![dcaf]()(https://youtu.be/D7kVdK--qY0)
 
